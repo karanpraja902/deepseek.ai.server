@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import {
-  analyzePDF,
-  extractText
+  analyzePDFWithLangChain,
+  streamPDFAnalysis
 } from '../../controllers/pdf';
 
 const router = Router();
 
-// Analyze PDF
-router.post('/analyze', analyzePDF);
+// Analyze PDF with LangChain
+router.post('/analyze', analyzePDFWithLangChain);
 
-// Extract text from PDF
-router.post('/extract', extractText);
+// Stream PDF Analysis
+router.post('/analyze/stream', streamPDFAnalysis);
 
 export default router;

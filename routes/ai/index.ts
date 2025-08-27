@@ -1,6 +1,11 @@
 import { Router } from 'express';
-import { streamChat, generateImageHandler } from '../../controllers/ai';
+import { streamChat, 
+  generateImageHandler,
+  getMemories,
+  addMemoriesForUser
+} from '../../controllers/ai';
 import { performWebSearchWithAI } from '../../controllers/search';
+import { analyzePDFWithLangChain, streamPDFAnalysis } from '../../controllers/pdf';
 
 const router = Router();
 
@@ -9,6 +14,15 @@ router.post('/chat/stream', streamChat);
 
 // Image generation endpoint
 router.post('/generate-image', generateImageHandler);
+
+// Get memories for a user (for debugging only)
+router.get('/memories/:userId', getMemories);
+
+// Add memory for a user (for testing)
+router.post('/memories/add', addMemoriesForUser);
+
+// PDF Analysis endpoints
+
 
 // Web search endpoint for chat integration
 router.post('/web-search', async (req, res) => {
