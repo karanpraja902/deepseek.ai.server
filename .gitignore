@@ -238,3 +238,5 @@ sessions/
 # API keys and secrets
 config/secrets.json
 config/credentials.json
+*.json
+clever-bee-468418-s7-9d2a25e023ff.json
