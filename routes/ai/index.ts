@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { streamChat, 
   generateImageHandler,
   getMemories,
-  addMemoriesForUser
+  addMemoriesForUser,
+  getAvailableModelsHandler
 } from '../../controllers/ai';
 import { performWebSearchWithAI } from '../../controllers/search';
 import { analyzePDFWithLangChain, streamPDFAnalysis } from '../../controllers/pdf';
@@ -20,6 +21,9 @@ router.get('/memories/:userId', getMemories);
 
 // Add memory for a user (for testing)
 router.post('/memories/add', addMemoriesForUser);
+
+// Get available models
+router.get('/models', getAvailableModelsHandler);
 
 // PDF Analysis endpoints
 
