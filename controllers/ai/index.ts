@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { streamText, experimental_generateImage as generateImage, convertToModelMessages } from 'ai';
+import { streamText, experimental_generateImage as generateImage, convertToModelMessages, smoothStream, generateText } from 'ai';
 import { createVertex } from '@ai-sdk/google-vertex';
 // import { googleTools } from '@ai-sdk/google/internal';
 import asyncHandler from 'express-async-handler';
@@ -336,6 +336,7 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
           },
         } satisfies GoogleGenerativeAIProviderOptions,
       },
+      // experimental_transform: smoothStream(),
       messages: convertedMessages,
       temperature: 0.4,
     });
@@ -576,34 +577,54 @@ export const generateImageHandler = asyncHandler(async (req: Request, res: Respo
     console.log(`Generating image with prompt: ${prompt}`);
 
     // Read the clever-bee service account credentials
-    const serviceAccountPath = path.join(__dirname, '../../clever-bee-468418-s7-9d2a25e023ff.json');
-    const serviceAccountKey = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    // const serviceAccountPath = path.join(__dirname, '../../clever-bee-468418-s7-9d2a25e023ff.json');
+    // const serviceAccountKey = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
-    const vertex = createVertex({
-      project: serviceAccountKey.project_id,
-      location: 'us-central1',
-      googleAuthOptions: {
-        credentials: serviceAccountKey,
+    // const vertex = createVertex({
+    //   project: serviceAccountKey.project_id,
+    //   location: 'us-central1',
+    //   googleAuthOptions: {
+    //     credentials: serviceAccountKey,
+    //   },
+    // });
+
+    // const { image } = await generateImage({
+    //   model: vertex.image('imagen-3.0-generate-002'),
+    //   prompt: prompt,
+    //   aspectRatio: '16:9',
+    // });
+    const result = await generateText({
+      model: google('gemini-2.0-flash-exp'),
+      providerOptions: {
+        google: { responseModalities: ['TEXT', 'IMAGE'] },
       },
-    });
-
-    const { image } = await generateImage({
-      model: vertex.image('imagen-3.0-generate-002'),
       prompt: prompt,
-      aspectRatio: '16:9',
     });
+    console.log("resultfiles:", result.files);
+//     const imageBase64 = result.files[0].base64;
+//     for (const file of result.files) {
+//       if (file.mediaType.startsWith('image/')) {
+// console.log("Imagefile:", file)
+//         // The file object provides multiple data formats:
+//         // Access images as base64 string, Uint8Array binary data, or check type
+//         // - file.base64: string (data URL format)
+//         // - file.uint8Array: Uint8Array (binary data)
+//         // - file.mediaType: string (e.g. "image/png")
+//       }
+//     }
     
-    // console.log(
-    //   `Revised prompt: ${providerMetadata.vertex.images[0].revisedPrompt}`,
-    // );
+//     console.log(
+//       `Revised prompt: ${providerMetadata.vertex.images[0].revisedPrompt}`,
+//     );
 
-    console.log('✅ Image generated successfully');
-    console.log('Image type:', typeof image);
-    console.log('Image object keys:', Object.keys(image));
-    console.log('Image object:', JSON.stringify(image, null, 2));
+//     console.log('✅ Image generated successfully');
+//     console.log('Image type:', typeof image);
+//     console.log('Image object keys:', Object.keys(image));
+//     console.log('Image object:', JSON.stringify(image, null, 2));
     
     // Convert image to base64 string
-    let imageBase64: string;
+    const image = result.files[0];
+    let imageBase64;
     if (typeof image === 'string') {
       imageBase64 = image;
     } else if (image && typeof image === 'object') {
