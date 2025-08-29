@@ -52,17 +52,20 @@ if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConf
 
 cloudinary.config(cloudinaryConfig);
 
-// Memory cache for faster retrieval
+// Memory cache for faster retrieval with size limits
 interface MemoryCache {
   [userId: string]: {
     memories: string;
     timestamp: number;
     query: string;
+    lastAccessed: number;
   };
 }
 
 const memoryCache: MemoryCache = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
+const MAX_CACHE_SIZE = 50; // Maximum number of users to cache
+const MAX_MEMORY_LENGTH = 5000; // Maximum memory string length per user
 
 // Initialize Mem0 Client for Google
 const mem0 = createMem0({
@@ -78,6 +81,27 @@ const mem0 = createMem0({
   },
 });
 
+// Function to manage cache size with LRU eviction
+const manageCacheSize = () => {
+  const cacheKeys = Object.keys(memoryCache);
+  
+  if (cacheKeys.length <= MAX_CACHE_SIZE) {
+    return;
+  }
+  
+  // Sort by last accessed time and remove oldest entries
+  const sortedKeys = cacheKeys.sort((a, b) => 
+    memoryCache[a].lastAccessed - memoryCache[b].lastAccessed
+  );
+  
+  const keysToRemove = sortedKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
+  keysToRemove.forEach(key => {
+    delete memoryCache[key];
+  });
+  
+  console.log(`🗑️ Evicted ${keysToRemove.length} cache entries (LRU)`);
+};
+
 // Enhanced memory retrieval with background refresh and timeout handling
 const getMemoriesWithCache = async (userId: string, query: string): Promise<string> => {
   const cacheKey = userId;
@@ -86,6 +110,9 @@ const getMemoriesWithCache = async (userId: string, query: string): Promise<stri
   // Return cached immediately if available
   if (memoryCache[cacheKey] && (now - memoryCache[cacheKey].timestamp) < CACHE_DURATION) {
     console.log('✅ Using cached memories for user:', userId);
+    
+    // Update last accessed time for LRU
+    memoryCache[cacheKey].lastAccessed = now;
     
     // Background refresh if cache is more than 2 minutes old
     if ((now - memoryCache[cacheKey].timestamp) > 2 * 60 * 1000) {
@@ -109,11 +136,22 @@ const getMemoriesWithCache = async (userId: string, query: string): Promise<stri
     ]);
     
     if (memories) {
+      // Truncate memories if too long to prevent excessive memory usage
+      const memoriesString = memories as string;
+      const truncatedMemories = memoriesString.length > MAX_MEMORY_LENGTH 
+        ? memoriesString.substring(0, MAX_MEMORY_LENGTH) + '...[truncated]'
+        : memoriesString;
+      
       memoryCache[cacheKey] = {
-        memories: memories as string,
+        memories: truncatedMemories,
         timestamp: now,
-        query: query
+        query: query,
+        lastAccessed: now
       };
+      
+      // Manage cache size after adding new entry
+      manageCacheSize();
+      
       console.log('✅ Memories cached for user:', userId);
     }
     
@@ -144,7 +182,8 @@ const refreshMemoriesBackground = (userId: string, query: string) => {
       memoryCache[userId] = {
         memories: memories || '',
         timestamp: Date.now(),
-        query: query
+        query: query,
+        lastAccessed: Date.now()
       };
       console.log('✅ Background memory refresh completed for user:', userId);
     } catch (error) {
@@ -178,8 +217,28 @@ const cleanupExpiredCache = () => {
   }
 };
 
+// Function to log memory usage
+const logMemoryUsage = () => {
+  const usage = process.memoryUsage();
+  const cacheCount = Object.keys(memoryCache).length;
+  const totalCacheSize = Object.values(memoryCache)
+    .reduce((total, entry) => total + entry.memories.length, 0);
+  
+  console.log('📊 Memory Usage:', {
+    rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
+    heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
+    heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`,
+    external: `${Math.round(usage.external / 1024 / 1024)} MB`,
+    cacheEntries: cacheCount,
+    cacheSize: `${Math.round(totalCacheSize / 1024)} KB`
+  });
+};
+
 // Clean up expired cache every 10 minutes
 setInterval(cleanupExpiredCache, 10 * 60 * 1000);
+
+// Log memory usage every 15 minutes
+setInterval(logMemoryUsage, 15 * 60 * 1000);
 
 
 export const streamChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {

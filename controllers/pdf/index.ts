@@ -31,19 +31,30 @@ export const analyzePDFWithLangChain = asyncHandler(async (req: Request, res: Re
     console.log(`Question: ${question}`);
     console.log(`Analysis Type: ${analysisType}`);
 
-    // Download PDF from URL
-    const response = await axios.get(pdfUrl, {
-      responseType: 'arraybuffer'
-    });
-
-    // Save PDF temporarily
+    // Download PDF with streaming to avoid memory overload
     const tempDir = path.join(__dirname, '../../temp');
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
     
     const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
-    fs.writeFileSync(tempFilePath, response.data);
+    
+    // Stream download to file instead of loading into memory
+    const response = await axios.get(pdfUrl, {
+      responseType: 'stream',
+      maxContentLength: 50 * 1024 * 1024, // 50MB limit
+      timeout: 30000 // 30 second timeout
+    });
+    
+    const writer = fs.createWriteStream(tempFilePath);
+    response.data.pipe(writer);
+    
+    // Wait for download to complete
+    await new Promise<void>((resolve, reject) => {
+      writer.on('finish', () => resolve());
+      writer.on('error', reject);
+      response.data.on('error', reject);
+    });
 
     try {
       // Load PDF using LangChain
@@ -52,13 +63,31 @@ export const analyzePDFWithLangChain = asyncHandler(async (req: Request, res: Re
       
       console.log(`Loaded ${pdfDocs.length} pages from PDF`);
 
+      // Limit text processing to prevent memory overload
+      const maxTextLength = 100000; // 100KB text limit
+      const totalText = pdfDocs.map(doc => doc.pageContent).join(' ');
+      
+      if (totalText.length > maxTextLength) {
+        console.log(`⚠️ PDF text is large (${totalText.length} chars), truncating to ${maxTextLength} chars`);
+        pdfDocs[0].pageContent = totalText.substring(0, maxTextLength) + '...[truncated]';
+        pdfDocs.splice(1); // Keep only first document with truncated content
+      }
+
       // Split documents into chunks
       const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200,
+        chunkSize: 800, // Reduced chunk size
+        chunkOverlap: 100, // Reduced overlap
       });
       
       const splitDocs = await textSplitter.splitDocuments(pdfDocs);
+      
+      // Limit number of chunks to prevent excessive memory usage
+      const maxChunks = 20;
+      if (splitDocs.length > maxChunks) {
+        console.log(`⚠️ Too many chunks (${splitDocs.length}), limiting to ${maxChunks}`);
+        splitDocs.splice(maxChunks);
+      }
+      
       console.log(`Split into ${splitDocs.length} chunks`);
 
       // Create vector store
