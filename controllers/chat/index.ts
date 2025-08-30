@@ -14,7 +14,7 @@ import { ApiResponse, IMessage } from '../../types';
 export const createChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate request body
-    console.log("createChat:", req.body);
+    console.log("createChat controller", req.body);
     const validation = validateCreateChatRequest(req.body);
     if (!validation.success) {
       res.status(400).json({
@@ -44,6 +44,7 @@ export const createChat = asyncHandler(async (req: Request, res: Response): Prom
       message: 'Chat created successfully',
       data: {
         chat: {
+          _id: newChat.id, // Use _id to match client expectations
           id: newChat.id,
           userId: newChat.userId,
           title: newChat.title,

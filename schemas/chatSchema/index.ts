@@ -64,7 +64,12 @@ const AddMessageRequestSchema = z.object({
     isImageGeneration: z.boolean().optional().default(false),
   }).optional().default({}),
 }).refine((data) => {
-  // Ensure either content or parts with text content is provided
+  // Allow empty content for assistant messages (streaming responses can start empty)
+  if (data.role === 'assistant') {
+    return true;
+  }
+  
+  // For user messages, ensure either content or parts with text content is provided
   if (data.content && data.content.trim()) {
     return true;
   }
@@ -72,11 +77,14 @@ const AddMessageRequestSchema = z.object({
     const hasTextContent = data.parts.some(part => 
       part.type === 'text' && part.text && part.text.trim()
     );
-    return hasTextContent;
+    const hasFileContent = data.parts.some(part => 
+      part.type === 'file' && part.url
+    );
+    return hasTextContent || hasFileContent;
   }
   return false;
 }, {
-  message: "Either content or parts with text content must be provided",
+  message: "For user messages, either content or parts with text/file content must be provided",
   path: ["content"]
 });
 

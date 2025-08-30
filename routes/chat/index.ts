@@ -19,11 +19,11 @@ const router = Router();
 // Create new chat
 router.post('/', validateCreateChat, createChat);
 
+// Get all chats for a user (must come before /:id route)
+router.get('/', getUserChats);
+
 // Get chat by ID
 router.get('/:id', getChat);
-
-// Get all chats for a user
-router.get('/', getUserChats);
 
 // Add message to chat
 router.post('/:id/messages', validateAddMessage, addMessage);
