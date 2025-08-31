@@ -8,7 +8,7 @@ import { IUser, ApiResponse, JWTPayload } from '../../types';
 // Initialize static user
 export const initializeStaticUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
-    const staticUserId = 'static_user_karan';
+    const staticUserId = 'static_user_karanao';
     
     // Check if static user already exists
     let staticUser = await User.findOne({ id: staticUserId });
