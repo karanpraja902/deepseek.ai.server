@@ -29,6 +29,13 @@ export interface IUser extends Document {
   avatar: string;
   preferences: IUserPreferences;
   memory: IUserMemory;
+  subscription?: {
+    plan: string;
+    status: string;
+    subscribedAt: Date;
+    currentPeriodEnd?: Date;
+    trialEnd?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
   lastActive: Date;

@@ -28,6 +28,7 @@ export const getUserProfile = asyncHandler(async (req: Request, res: Response): 
           name: user.name,
           avatar: user.avatar,
           preferences: user.preferences,
+          subscription: user.subscription,
           createdAt: user.createdAt,
           lastActive: user.lastActive
         }
@@ -47,17 +48,26 @@ export const getUserProfile = asyncHandler(async (req: Request, res: Response): 
 // Update user profile
 export const updateUserProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('updateUserProfile', req.body);
     const { userId } = req.params;
-    const { name, avatar, preferences }: { 
+    const { name, avatar, preferences, subscription }: { 
       name?: string; 
       avatar?: string; 
-      preferences?: Partial<IUserPreferences>; 
+      preferences?: Partial<IUserPreferences>;
+      subscription?: {
+        plan: string;
+        status: string;
+        subscribedAt?: Date;
+        currentPeriodEnd?: Date;
+        trialEnd?: Date;
+      };
     } = req.body;
     
     const updateData: any = {};
     if (name) updateData.name = name;
     if (avatar) updateData.avatar = avatar;
     if (preferences) updateData.preferences = preferences;
+    if (subscription) updateData.subscription = subscription;
     
     updateData.lastActive = new Date();
     
@@ -66,7 +76,7 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
       updateData,
       { new: true }
     );
-    
+    console.log('updatedUserProfile', user);
     if (!user) {
       res.status(404).json({ 
         success: false,
@@ -86,6 +96,7 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
           name: user.name,
           avatar: user.avatar,
           preferences: user.preferences,
+          subscription: user.subscription,
           lastActive: user.lastActive
         }
       }

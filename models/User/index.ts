@@ -74,6 +74,29 @@ const UserSchema: Schema<IUser> = new Schema({
     type: Boolean,
     default: true,
   },
+  subscription: {
+    plan: {
+      type: String,
+      default: 'free',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'trial', 'cancelled'],
+      default: 'inactive',
+    },
+    subscribedAt: {
+      type: Date,
+      default: null,
+    },
+    currentPeriodEnd: {
+      type: Date,
+      default: null,
+    },
+    trialEnd: {
+      type: Date,
+      default: null,
+    },
+  },
 }, {
   timestamps: true,
 });

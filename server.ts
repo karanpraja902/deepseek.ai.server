@@ -17,6 +17,7 @@ import pdfRoutes from './routes/pdf';
 import cloudinaryRoutes from './routes/cloudinary';
 import aiRoutes from './routes/ai';
 import weatherRoutes from './routes/weather';
+import stripeRoutes from './routes/stripe';
 import { handleValidationError } from './middleware/validation';
 
 const app = express();
@@ -64,6 +65,7 @@ app.use('/api/pdf', pdfRoutes);
 app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/weather', weatherRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 // Validation error handling middleware
 app.use(handleValidationError);
