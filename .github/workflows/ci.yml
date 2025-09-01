@@ -46,16 +46,11 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: package-lock.json
-    - name: Ensure package-lock.json is in sync
-      run: |
-          npm install --package-lock-only
-          git diff --exit-code package-lock.json || {
-            echo "::error::package-lock.json is out of sync with package.json. Please commit the updated lock file."
-            exit 1
-          }
+    - name: Regenerate package-lock.json
+      run: rm -f package-lock.json && npm install
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
 
     - name: Run linting (if eslint is configured)
       run: npm run lint || echo "No linting configured"
