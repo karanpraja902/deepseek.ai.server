@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-
+const cookieParser = require("cookie-parser");
 // Load environment variables
 dotenv.config();
 
@@ -20,6 +20,9 @@ import weatherRoutes from './routes/weather';
 import stripeRoutes from './routes/stripe';
 import { handleValidationError } from './middleware/validation';
 
+import passport from "passport";
+import "./strategy/google";
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -28,12 +31,13 @@ connectDB();
 
 // Security middleware
 app.use(helmet());
-
+app.use(cookieParser());
 // CORS configuration
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
+app.use(passport.initialize());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -66,7 +70,6 @@ app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/stripe', stripeRoutes);
-
 // Validation error handling middleware
 app.use(handleValidationError);
 

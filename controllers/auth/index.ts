@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { IUser, ApiResponse, JWTPayload } from '../../types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Initialize static user
 export const initializeStaticUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -233,3 +234,170 @@ export const updateUserMemory = asyncHandler(async (req: Request, res: Response)
     });
   }
 });
+
+// User registration
+export const register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, password } = req.body;
+    
+    if (!name || !email || !password) {
+      res.status(400).json({ 
+        success: false,
+        error: "Please provide all required fields" 
+      });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ 
+        success: false,
+        error: "User already exists" 
+      });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const user = new User({
+      id: uuidv4(),
+      email,
+      username: email.split('@')[0],
+      password: hashedPassword,
+      name,
+      preferences: {
+        theme: 'light',
+        language: 'en',
+        aiModel: 'gemini-2.5-flash',
+        conversationStyle: 'casual',
+        topics: []
+      },
+      memory: {}
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Set cookie
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+    });
+
+    const response: ApiResponse<any> = {
+      success: true,
+      message: "User registered successfully",
+      data: {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          preferences: user.preferences,
+        }
+      }
+    };
+
+    res.status(201).json(response);
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Get current user
+export const getCurrentUser = asyncHandler(async (req: any, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const user = await User.findOne({ id: userId, isActive: true }).select("-password");
+    
+    if (!user) {
+      res.status(404).json({ 
+        success: false,
+        error: "User not found" 
+      });
+      return;
+    }
+
+    const response: ApiResponse<any> = {
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          avatar: user.avatar,
+          preferences: user.preferences,
+        }
+      }
+    };
+
+    res.status(200).json(response);
+  } catch (error: any) {
+    console.error('Get current user error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Google OAuth authentication
+export const googleAuth = (req: Request, res: Response): void => {
+  // This function will be handled by passport middleware
+  // The actual authentication logic is in the Google strategy
+};
+
+// Google OAuth callback
+export const googleCallback = asyncHandler(async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log("google callback request", req);
+    console.log({"request": req.user.email});
+    const token = jwt.sign(
+      { userId: req.user.id, email: req.user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: "30d" }
+    );
+    console.log("google callback token", token);
+    
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+    });
+
+    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?token=${token}`);
+  } catch (error: any) {
+    console.error('Google callback error:', error);
+    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
+  }
+});
+
+// User logout
+export const logout = (req: Request, res: Response): void => {
+  res.clearCookie("auth_token", {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true
+  });
+  
+  res.status(200).json({ 
+    success: true,
+    message: "User logout successful" 
+  });
+}

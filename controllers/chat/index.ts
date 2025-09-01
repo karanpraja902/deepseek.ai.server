@@ -31,7 +31,7 @@ export const createChat = asyncHandler(async (req: Request, res: Response): Prom
     
     const newChat = new Chat({
       id: chatId,
-      userId: userId || 'static_user_karanao',
+      userId: userId ,
       messages: [],
       title: 'New Chat',
       isActive: true
