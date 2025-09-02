@@ -18,7 +18,6 @@ const createCheckoutSession = async (req, res) => {
             });
             return;
         }
-        // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
@@ -30,7 +29,7 @@ const createCheckoutSession = async (req, res) => {
             ],
             success_url: successUrl,
             cancel_url: cancelUrl,
-            customer_email: `${userId}@example.com`, // You might want to get actual email from your user database
+            customer_email: `${userId}@example.com`,
             metadata: {
                 userId: userId,
                 planName: planName,
@@ -63,21 +62,8 @@ const activateTrial = async (req, res) => {
             });
             return;
         }
-        // Here you would typically:
-        // 1. Update user's subscription status in your database
-        // 2. Set trial start and end dates
-        // 3. Grant access to Pro features
-        // For now, we'll simulate the activation
         const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 14); // 14 days trial
-        // TODO: Update your user database with trial information
-        // Example:
-        // await updateUserSubscription(userId, {
-        //   plan: 'pro-trial',
-        //   status: 'trialing',
-        //   trialEnd: trialEndDate,
-        //   trialStart: new Date(),
-        // });
+        trialEndDate.setDate(trialEndDate.getDate() + 14);
         res.json({
             success: true,
             message: 'Pro Trial activated successfully',
@@ -101,27 +87,6 @@ const getSubscriptionStatus = async (req, res) => {
             });
             return;
         }
-        // TODO: Get user's Stripe customer ID from your database
-        // For now, we'll return a mock response
-        // Example of how you would get subscription status from Stripe:
-        // const customer = await stripe.customers.list({
-        //   email: `${userId}@example.com`,
-        //   limit: 1,
-        // });
-        // if (customer.data.length === 0) {
-        //   res.json({
-        //     hasSubscription: false,
-        //     plan: null,
-        //     status: null,
-        //   });
-        //   return;
-        // }
-        // const subscriptions = await stripe.subscriptions.list({
-        //   customer: customer.data[0].id,
-        //   status: 'all',
-        //   limit: 1,
-        // });
-        // Mock response for now
         res.json({
             hasSubscription: false,
             plan: null,
@@ -146,9 +111,7 @@ const cancelSubscription = async (req, res) => {
             });
             return;
         }
-        // Cancel the subscription in Stripe
         const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
-        // TODO: Update your user database with cancellation status
         res.json({
             success: true,
             message: 'Subscription canceled successfully',
@@ -167,3 +130,4 @@ const cancelSubscription = async (req, res) => {
     }
 };
 exports.cancelSubscription = cancelSubscription;
+//# sourceMappingURL=index.js.map

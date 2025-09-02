@@ -7,13 +7,11 @@ exports.getFileInfo = exports.testCloudinaryConfig = exports.deleteFile = export
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const cloudinary_1 = require("cloudinary");
 const multer_1 = __importDefault(require("multer"));
-// Configure Cloudinary
 const cloudinaryConfig = {
     cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
     api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET,
 };
-// Validate Cloudinary configuration
 if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
     console.error('Cloudinary configuration missing:', {
         cloud_name: cloudinaryConfig.cloud_name ? 'set' : 'missing',
@@ -22,17 +20,14 @@ if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConf
     });
 }
 cloudinary_1.v2.config(cloudinaryConfig);
-// Configure multer for file uploads
 exports.upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024,
     },
 });
-// Upload file to Cloudinary
 exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        // Check if Cloudinary is properly configured
         if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
             res.status(500).json({
                 success: false,
@@ -48,10 +43,8 @@ exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
             return;
         }
         const { originalname, buffer, mimetype } = req.file;
-        // Convert buffer to base64
         const base64File = buffer.toString('base64');
         const dataURI = `data:${mimetype};base64,${base64File}`;
-        // Upload to Cloudinary
         const result = await cloudinary_1.v2.uploader.upload(dataURI, {
             resource_type: 'auto',
             folder: 'deepseek-ai',
@@ -90,7 +83,6 @@ exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
-// Delete file from Cloudinary
 exports.deleteFile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { publicId } = req.params;
@@ -124,7 +116,6 @@ exports.deleteFile = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
-// Test Cloudinary configuration
 exports.testCloudinaryConfig = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const config = {
@@ -146,7 +137,6 @@ exports.testCloudinaryConfig = (0, express_async_handler_1.default)(async (req, 
         });
     }
 });
-// Get file info
 exports.getFileInfo = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { publicId } = req.params;
@@ -182,3 +172,4 @@ exports.getFileInfo = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
+//# sourceMappingURL=index.js.map

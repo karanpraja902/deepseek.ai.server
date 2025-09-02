@@ -133,13 +133,12 @@ const UserSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Update the updatedAt field before saving
 UserSchema.pre('save', function (next) {
     this.updatedAt = new Date();
     this.lastActive = new Date();
     next();
 });
-// Create indexes for better query performance
 UserSchema.index({ id: 1, isActive: 1 });
 UserSchema.index({ lastActive: -1 });
 exports.default = mongoose_1.default.model('User', UserSchema);
+//# sourceMappingURL=index.js.map

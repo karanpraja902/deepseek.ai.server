@@ -5,24 +5,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAvailableModelsHandler = exports.generateImageHandler = exports.getMemories = exports.addMemoriesForUser = exports.streamChat = void 0;
 const ai_1 = require("ai");
-// import { googleTools } from '@ai-sdk/google/internal';
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const cloudinary_1 = require("cloudinary");
 const google_1 = require("@ai-sdk/google");
-// import { GoogleAICacheManager } from '@google/generative-ai/server';
-// Mem0 imports
 const vercel_ai_provider_1 = require("@mem0/vercel-ai-provider");
 const vercel_ai_provider_2 = require("@mem0/vercel-ai-provider");
-// Model provider imports
 const modelProvider_1 = require("../../services/modelProvider");
-// Context management imports
 const contextManager_1 = require("../../services/contextManager");
 const cloudinaryConfig = {
     cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
     api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET,
 };
-// Validate Cloudinary configuration
 if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
     console.warn('⚠️ Cloudinary configuration incomplete. Image uploads may fail.');
     console.log('Cloudinary config:', {
@@ -33,29 +27,21 @@ if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConf
 }
 cloudinary_1.v2.config(cloudinaryConfig);
 const memoryCache = {};
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
-const MAX_CACHE_SIZE = 50; // Maximum number of users to cache
-const MAX_MEMORY_LENGTH = 5000; // Maximum memory string length per user
-// Initialize Mem0 Client for Google
+const CACHE_DURATION = 5 * 60 * 1000;
+const MAX_CACHE_SIZE = 50;
+const MAX_MEMORY_LENGTH = 5000;
 const mem0 = (0, vercel_ai_provider_1.createMem0)({
     provider: 'google',
     mem0ApiKey: process.env.MEM0_API_KEY || '',
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
-    config: {
-    // Configure the Google LLM Provider here
-    },
-    // Optional Mem0 Global Config
-    mem0Config: {
-    // Configure Mem0 settings here if needed
-    },
+    config: {},
+    mem0Config: {},
 });
-// Function to manage cache size with LRU eviction
 const manageCacheSize = () => {
     const cacheKeys = Object.keys(memoryCache);
     if (cacheKeys.length <= MAX_CACHE_SIZE) {
         return;
     }
-    // Sort by last accessed time and remove oldest entries
     const sortedKeys = cacheKeys.sort((a, b) => memoryCache[a].lastAccessed - memoryCache[b].lastAccessed);
     const keysToRemove = sortedKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
     keysToRemove.forEach(key => {
@@ -63,35 +49,28 @@ const manageCacheSize = () => {
     });
     console.log(`🗑️ Evicted ${keysToRemove.length} cache entries (LRU)`);
 };
-// Enhanced memory retrieval with background refresh and timeout handling
 const getMemoriesWithCache = async (userId, query) => {
     const cacheKey = userId;
     const now = Date.now();
-    // Return cached immediately if available
     if (memoryCache[cacheKey] && (now - memoryCache[cacheKey].timestamp) < CACHE_DURATION) {
         console.log('✅ Using cached memories for user:', userId);
-        // Update last accessed time for LRU
         memoryCache[cacheKey].lastAccessed = now;
-        // Background refresh if cache is more than 2 minutes old
         if ((now - memoryCache[cacheKey].timestamp) > 2 * 60 * 1000) {
             refreshMemoriesBackground(userId, query);
         }
         return memoryCache[cacheKey].memories;
     }
-    // If no cache, try to fetch with short timeout for faster response
     try {
         console.log('🔄 Fast fetching memories from Mem0 for user:', userId);
         const memoriesPromise = (0, vercel_ai_provider_2.retrieveMemories)(query, {
             user_id: userId,
             mem0ApiKey: process.env.MEM0_API_KEY
         });
-        // Wait max 1.5 seconds for memories to avoid blocking response
         const memories = await Promise.race([
             memoriesPromise,
             new Promise((resolve) => setTimeout(() => resolve(''), 1500))
         ]);
         if (memories) {
-            // Truncate memories if too long to prevent excessive memory usage
             const memoriesString = memories;
             const truncatedMemories = memoriesString.length > MAX_MEMORY_LENGTH
                 ? memoriesString.substring(0, MAX_MEMORY_LENGTH) + '...[truncated]'
@@ -102,7 +81,6 @@ const getMemoriesWithCache = async (userId, query) => {
                 query: query,
                 lastAccessed: now
             };
-            // Manage cache size after adding new entry
             manageCacheSize();
             console.log('✅ Memories cached for user:', userId);
         }
@@ -110,7 +88,6 @@ const getMemoriesWithCache = async (userId, query) => {
     }
     catch (error) {
         console.error('❌ Fast memory fetch failed:', error);
-        // Return expired cache if available
         if (memoryCache[cacheKey]) {
             console.log('⚠️ Using expired cached memories due to fetch error');
             return memoryCache[cacheKey].memories;
@@ -118,7 +95,6 @@ const getMemoriesWithCache = async (userId, query) => {
         return '';
     }
 };
-// Background memory refresh to keep cache warm
 const refreshMemoriesBackground = (userId, query) => {
     setImmediate(async () => {
         try {
@@ -140,14 +116,12 @@ const refreshMemoriesBackground = (userId, query) => {
         }
     });
 };
-// Function to invalidate cache for a user (when new memories are added)
 const invalidateUserCache = (userId) => {
     if (memoryCache[userId]) {
         delete memoryCache[userId];
         console.log('🗑️ Invalidated memory cache for user:', userId);
     }
 };
-// Function to clean up expired cache entries
 const cleanupExpiredCache = () => {
     const now = Date.now();
     let cleanedCount = 0;
@@ -161,7 +135,6 @@ const cleanupExpiredCache = () => {
         console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`);
     }
 };
-// Function to log memory usage
 const logMemoryUsage = () => {
     const usage = process.memoryUsage();
     const cacheCount = Object.keys(memoryCache).length;
@@ -176,9 +149,7 @@ const logMemoryUsage = () => {
         cacheSize: `${Math.round(totalCacheSize / 1024)} KB`
     });
 };
-// Clean up expired cache every 10 minutes
 setInterval(cleanupExpiredCache, 10 * 60 * 1000);
-// Log memory usage every 15 minutes
 setInterval(logMemoryUsage, 15 * 60 * 1000);
 exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
     try {
@@ -192,10 +163,8 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         }
         console.log("messagesss:", messages[messages.length - 1].parts);
         console.log("userId1:", userId);
-        // Optimized message transformation for multimodal content with fast-path processing
         let transformedMessages = messages
             .map((msg) => {
-            // Handle tool messages properly
             if (msg.role === 'tool') {
                 return {
                     role: msg.role,
@@ -204,14 +173,12 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                     toolName: msg.toolName
                 };
             }
-            // Fast path for simple text messages (most common case)
             if (!msg.parts || !Array.isArray(msg.parts)) {
                 return msg.content?.trim() ? {
                     role: msg.role,
                     content: msg.content
                 } : null;
             }
-            // Process multimodal content efficiently without blocking
             const content = [];
             for (const part of msg.parts) {
                 if (part.type === 'text' && part.text?.trim()) {
@@ -221,7 +188,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                     content.push({ type: 'image', image: new URL(part.url) });
                 }
                 else if (part.type === 'file' && part.url && part.mediaType === 'application/pdf') {
-                    // For PDFs, provide immediate text description instead of blocking download
                     let pdfContent = `PDF Document: ${part.filename || 'Document'}\nURL: ${part.url}`;
                     if (part.pdfAnalysis) {
                         pdfContent += `\n\nPDF Analysis:\n- Page Count: ${part.pdfAnalysis.pageCount || 'Unknown'}`;
@@ -232,7 +198,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                     content.push({ type: 'text', text: pdfContent });
                 }
             }
-            // Fallback to simple content if no parts processed
             if (content.length === 0 && msg.content?.trim()) {
                 return {
                     role: msg.role,
@@ -245,12 +210,10 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
             } : null;
         })
             .filter((msg) => msg !== null);
-        // Parallel memory retrieval that doesn't block main processing
         let memoryContext = '';
         let memoryPromise = null;
         if (userId && process.env.MEM0_API_KEY) {
             console.log("Mem0 integration enabled for user:", userId);
-            // Get the latest user message to use as query for memory retrieval
             const latestUserMessage = transformedMessages
                 .filter(msg => msg.role === 'user')
                 .pop();
@@ -259,7 +222,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                     ? latestUserMessage.content
                     : latestUserMessage.content?.find((part) => part.type === 'text')?.text || '';
                 console.log('Starting parallel memory retrieval for query:', userQuery);
-                // Start memory retrieval in parallel (don't await yet)
                 memoryPromise = getMemoriesWithCache(userId, userQuery)
                     .then(memories => {
                     if (memories && memories.trim()) {
@@ -277,27 +239,21 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         else {
             console.log('Skipping Mem0 - userId:', !!userId, 'MEM0_API_KEY:', !!process.env.MEM0_API_KEY);
         }
-        // Continue with message processing while memory loads in background
-        // We'll incorporate memory results later if available
-        // Quickly try to get memory context with timeout, fallback to processing without it
         let messagesWithMemory = transformedMessages;
         console.log("transformedMessages.length:", transformedMessages.length);
         if (memoryPromise && transformedMessages.length > 0) {
             try {
-                // Try to get memory context quickly (max 800ms)
                 const timeoutMemory = Promise.race([
                     memoryPromise,
                     new Promise((resolve) => setTimeout(() => resolve(''), 800))
                 ]);
                 memoryContext = await timeoutMemory;
                 if (memoryContext.trim()) {
-                    // Create a system message with memory context
                     const systemMessage = {
                         role: 'system',
                         content: `You are a helpful AI assistant.${memoryContext}`
                     };
                     console.log("systemMessage length:", systemMessage.content.length);
-                    // Add system message at the beginning
                     messagesWithMemory = [systemMessage, ...transformedMessages];
                     console.log("messagesWithMemory.length:", messagesWithMemory.length);
                     console.log('✅ Added memory context to system message');
@@ -311,7 +267,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 console.log('Proceeding without memory context');
             }
         }
-        // Convert messages to the correct format for AI SDK
         const convertedMessages = messagesWithMemory.map(msg => {
             if (msg.role === 'system') {
                 return {
@@ -349,14 +304,11 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
             return msg;
         });
         console.log("convertedMessages:", convertedMessages.length);
-        // Determine which model to use
         console.log("requestedModel:", requestedModel);
         const modelKey = requestedModel && (0, modelProvider_1.isValidModel)(requestedModel) ? requestedModel : modelProvider_1.DEFAULT_MODEL;
         console.log(`Using model: ${modelKey} (${modelProvider_1.AVAILABLE_MODELS[modelKey]?.displayName})`);
         console.log("modelKey:", modelKey);
-        // Manage context length to prevent token limit errors
         const managedMessages = await (0, contextManager_1.manageContext)(convertedMessages, modelKey);
-        // Log context management results
         const originalTokens = (0, contextManager_1.calculateMessageTokens)(convertedMessages);
         const managedTokens = (0, contextManager_1.calculateMessageTokens)(managedMessages);
         const tokenLimit = (0, contextManager_1.getTokenLimit)(modelKey);
@@ -365,7 +317,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
       Managed: ${managedMessages.length} messages (${managedTokens} tokens)
       Limit: ${tokenLimit} tokens
       Model: ${modelKey}`);
-        // Validate final context
         const validation = (0, contextManager_1.validateContext)(managedMessages, modelKey);
         if (!validation.valid) {
             console.error(`❌ Context validation failed: ${validation.suggestion}`);
@@ -380,13 +331,11 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        // Build tools - only for Google models for now
         const tools = modelKey === 'google' ? {
             code_execution: google_1.google.tools.codeExecution({}),
             google_search: google_1.google.tools.googleSearch({}),
             url_context: google_1.google.tools.urlContext({}),
         } : {};
-        // Build provider options - only for Google models
         const providerOptions = modelKey === 'google' ? {
             google: {
                 thinkingConfig: {
@@ -394,10 +343,7 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 },
             },
         } : {};
-        // console.log("managedMessages:", managedMessages)
-        // Optimized context management: preserve conversation flow while respecting token limits
-        const optimizedMessages = managedMessages; // Use the properly managed context from manageContext()
-        // Wrap the model call in try-catch to catch OpenRouter errors before streaming
+        const optimizedMessages = managedMessages;
         let result;
         try {
             result = await (0, modelProvider_1.streamTextWithFallback)({
@@ -410,32 +356,27 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         }
         catch (modelError) {
             console.error('❌ Model call failed:', modelError);
-            // Enhanced error handling for different error types
             let errorMessage = 'Internal server error';
             let errorDetails = '';
             let statusCode = 500;
-            // Handle OpenRouter rate limit errors
             if (modelError.message && modelError.message.includes('Rate limit exceeded')) {
                 errorMessage = 'Rate limit exceeded for this model. Please try again later or add credits to your OpenRouter account.';
                 errorDetails = modelError.message;
                 statusCode = 429;
                 console.log("modelError:", modelError);
             }
-            // Handle API key errors
             else if (modelError.message && modelError.message.includes('API key')) {
                 errorMessage = 'API key error. Please check your model configuration.';
                 errorDetails = modelError.message;
                 statusCode = 401;
                 console.log("modelError:", modelError);
             }
-            // Handle model not found errors
             else if (modelError.message && modelError.message.includes('not found')) {
                 errorMessage = 'Model not available. Please try a different model.';
                 errorDetails = modelError.message;
                 statusCode = 404;
                 console.log("modelError:", modelError);
             }
-            // Handle other specific errors
             else if (modelError.message) {
                 errorMessage = modelError.message;
                 if (modelError.code) {
@@ -447,7 +388,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 console.log("modelError:", modelError);
             }
             console.log("errorMessage:", errorMessage);
-            // Extract additional error information from AI SDK errors
             if (modelError.data && modelError.data.error) {
                 const aiError = modelError.data.error;
                 if (aiError.message) {
@@ -458,7 +398,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 }
                 console.log("modelError:", modelError);
             }
-            // Send error response immediately
             if (!res.headersSent) {
                 res.status(statusCode).json({
                     success: false,
@@ -467,10 +406,9 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                     timestamp: new Date().toISOString(),
                     errorType: 'model_error'
                 });
-                return; // Exit early
+                return;
             }
         }
-        // Check if result is defined before proceeding
         if (!result) {
             console.error('❌ No result from model call');
             if (!res.headersSent) {
@@ -482,7 +420,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
             }
             return;
         }
-        // Stream response directly to client with error handling
         try {
             result.pipeTextStreamToResponse(res, {
                 headers: {
@@ -494,25 +431,20 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         }
         catch (streamError) {
             console.error('❌ Error streaming response:', streamError);
-            // Fallback: send a simple text response
             if (!res.headersSent) {
                 res.setHeader('Content-Type', 'text/plain; charset=utf-8');
                 res.write('I apologize, but I encountered an error while processing your request. Please try again.');
                 res.end();
             }
         }
-        // Store the conversation in Mem0 memory after streaming starts (non-blocking)
         if (userId && process.env.MEM0_API_KEY) {
-            // Use setImmediate for truly non-blocking operation
             setImmediate(() => {
                 try {
                     console.log('Queueing conversation for memory storage - user:', userId);
-                    // Get the latest user message
                     const latestUserMessage = transformedMessages
                         .filter(msg => msg.role === 'user')
                         .pop();
                     if (latestUserMessage) {
-                        // Validate message format before adding to memories
                         const messageToAdd = {
                             role: 'user',
                             content: typeof latestUserMessage.content === 'string'
@@ -520,19 +452,16 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                                 : latestUserMessage.content?.find((part) => part.type === 'text')?.text || ''
                         };
                         if (messageToAdd.content.trim()) {
-                            // Queue memory storage in batch processor
                             const memoryPromise = (0, vercel_ai_provider_2.addMemories)([messageToAdd], {
                                 user_id: userId,
                                 mem0ApiKey: process.env.MEM0_API_KEY
                             }).then(() => {
                                 console.log('✅ Conversation stored in Mem0 memory successfully');
-                                // Invalidate cache since new memories were added
                                 invalidateUserCache(userId);
                             }).catch((memoryError) => {
                                 console.error('❌ Error storing conversation in memory:', memoryError);
                             });
-                            // Don't wait for memory storage to complete
-                            memoryPromise.catch(() => { }); // Prevent unhandled promise rejection
+                            memoryPromise.catch(() => { });
                         }
                         else {
                             console.log('Skipping empty message for memory storage');
@@ -548,7 +477,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
     catch (error) {
         console.error('Streaming error:', error);
         if (!res.headersSent) {
-            // Provide detailed error information
             let errorMessage = 'Internal server error';
             let errorDetails = '';
             if (error.message) {
@@ -569,8 +497,6 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         }
     }
 });
-// Image Generation Endpoint
-// Add Memories for a user (for testing)
 exports.addMemoriesForUser = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { userId, message } = req.body;
@@ -627,7 +553,6 @@ exports.addMemoriesForUser = (0, express_async_handler_1.default)(async (req, re
         });
     }
 });
-// Get Memories for a user (for debugging only)
 exports.getMemories = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         console.log("getMemories");
@@ -649,7 +574,6 @@ exports.getMemories = (0, express_async_handler_1.default)(async (req, res) => {
         }
         console.log(`Retrieving memories for user: ${userId}`);
         try {
-            // Use a general query to retrieve all memories for the user
             const memories = await (0, vercel_ai_provider_2.retrieveMemories)('Retrieve all memories for this user', {
                 user_id: userId,
                 mem0ApiKey: process.env.MEM0_API_KEY
@@ -694,21 +618,6 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
             return;
         }
         console.log(`Generating image with prompt: ${prompt}`);
-        // Read the clever-bee service account credentials
-        // const serviceAccountPath = path.join(__dirname, '../../clever-bee-468418-s7-9d2a25e023ff.json');
-        // const serviceAccountKey = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-        // const vertex = createVertex({
-        //   project: serviceAccountKey.project_id,
-        //   location: 'us-central1',
-        //   googleAuthOptions: {
-        //     credentials: serviceAccountKey,
-        //   },
-        // });
-        // const { image } = await generateImage({
-        //   model: vertex.image('imagen-3.0-generate-002'),
-        //   prompt: prompt,
-        //   aspectRatio: '16:9',
-        // });
         const result = await (0, ai_1.generateText)({
             model: (0, google_1.google)('gemini-2.0-flash-exp'),
             providerOptions: {
@@ -717,32 +626,12 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
             prompt: prompt,
         });
         console.log("resultfiles:", result.files);
-        //     const imageBase64 = result.files[0].base64;
-        //     for (const file of result.files) {
-        //       if (file.mediaType.startsWith('image/')) {
-        // console.log("Imagefile:", file)
-        //         // The file object provides multiple data formats:
-        //         // Access images as base64 string, Uint8Array binary data, or check type
-        //         // - file.base64: string (data URL format)
-        //         // - file.uint8Array: Uint8Array (binary data)
-        //         // - file.mediaType: string (e.g. "image/png")
-        //       }
-        //     }
-        //     console.log(
-        //       `Revised prompt: ${providerMetadata.vertex.images[0].revisedPrompt}`,
-        //     );
-        //     console.log('✅ Image generated successfully');
-        //     console.log('Image type:', typeof image);
-        //     console.log('Image object keys:', Object.keys(image));
-        //     console.log('Image object:', JSON.stringify(image, null, 2));
-        // Convert image to base64 string
         const image = result.files[0];
         let imageBase64;
         if (typeof image === 'string') {
             imageBase64 = image;
         }
         else if (image && typeof image === 'object') {
-            // Handle different image object formats
             if ('base64' in image && image.base64) {
                 imageBase64 = image.base64;
             }
@@ -750,7 +639,6 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
                 imageBase64 = image.toString();
             }
             else {
-                // Try to convert to base64 using Buffer
                 imageBase64 = Buffer.from(image).toString('base64');
             }
         }
@@ -764,10 +652,8 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
         }
         catch (uploadError) {
             console.error('Failed to upload to Cloudinary, falling back to base64:', uploadError);
-            // Fallback to base64 if Cloudinary upload fails
             cloudinaryUrl = `data:image/png;base64,${imageBase64}`;
         }
-        // Generate AI commentary about the image
         const commentaryResult = await (0, ai_1.streamText)({
             model: (0, google_1.google)('gemini-2.5-flash'),
             messages: [
@@ -778,7 +664,6 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
             ],
             temperature: 0.7,
         });
-        // Get the commentary text
         let commentary = '';
         for await (const chunk of commentaryResult.textStream) {
             commentary += chunk;
@@ -801,7 +686,6 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
     }
     catch (error) {
         console.error('Image generation error:', error);
-        // Provide detailed error information
         let errorMessage = 'Failed to generate image';
         let errorDetails = '';
         if (error.message) {
@@ -821,7 +705,6 @@ exports.generateImageHandler = (0, express_async_handler_1.default)(async (req, 
         });
     }
 });
-// Get available models endpoint
 exports.getAvailableModelsHandler = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const models = (0, modelProvider_1.getAvailableModels)();
@@ -842,21 +725,17 @@ exports.getAvailableModelsHandler = (0, express_async_handler_1.default)(async (
         });
     }
 });
-// Helper function to upload base64 image to Cloudinary
 const uploadBase64ImageToCloudinary = async (base64Data, prompt) => {
     try {
-        // Create a unique filename based on prompt and timestamp
         const timestamp = Date.now();
         const sanitizedPrompt = prompt.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
         const filename = `ai-generated-${sanitizedPrompt}-${timestamp}`;
         console.log('Uploading to Cloudinary - Base64 length:', base64Data.length);
         console.log('Base64 starts with:', base64Data.substring(0, 50));
-        // Ensure base64 data has proper format for Cloudinary
         let formattedBase64 = base64Data;
         if (!base64Data.startsWith('data:image/')) {
             formattedBase64 = `data:image/png;base64,${base64Data}`;
         }
-        // Upload to Cloudinary
         const result = await cloudinary_1.v2.uploader.upload(formattedBase64, {
             resource_type: 'image',
             folder: 'ai-generated-images',
@@ -876,3 +755,4 @@ const uploadBase64ImageToCloudinary = async (base64Data, prompt) => {
         throw new Error('Failed to upload image to Cloudinary');
     }
 };
+//# sourceMappingURL=index.js.map

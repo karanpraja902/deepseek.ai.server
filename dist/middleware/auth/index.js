@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authMiddleware = (req, res, next) => {
-    // Try to get token from cookie first, then from Authorization header
     console.log("auth middleware request", req);
     console.log("auth middleware cookies", req.cookies);
     let token = req?.cookies?.auth_token;
@@ -40,3 +39,4 @@ const authMiddleware = (req, res, next) => {
 };
 exports.authMiddleware = authMiddleware;
 exports.default = exports.authMiddleware;
+//# sourceMappingURL=index.js.map

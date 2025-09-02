@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserStats = exports.updateUserProfile = exports.getUserProfile = void 0;
 const User_1 = __importDefault(require("../../models/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-// Get user profile
 exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { userId } = req.params;
@@ -44,7 +43,6 @@ exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) =
         });
     }
 });
-// Update user profile
 exports.updateUserProfile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         console.log('updateUserProfile', req.body);
@@ -95,7 +93,6 @@ exports.updateUserProfile = (0, express_async_handler_1.default)(async (req, res
         });
     }
 });
-// Get user statistics
 exports.getUserStats = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { userId } = req.params;
@@ -107,10 +104,9 @@ exports.getUserStats = (0, express_async_handler_1.default)(async (req, res) => 
             });
             return;
         }
-        // You can add more statistics here based on your needs
         const stats = {
-            totalChats: 0, // This would need to be calculated from Chat model
-            totalMessages: 0, // This would need to be calculated from Chat model
+            totalChats: 0,
+            totalMessages: 0,
             lastActive: user.lastActive,
             memberSince: user.createdAt,
             preferences: user.preferences
@@ -129,3 +125,4 @@ exports.getUserStats = (0, express_async_handler_1.default)(async (req, res) => 
         });
     }
 });
+//# sourceMappingURL=index.js.map

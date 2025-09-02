@@ -1,8 +1,4 @@
 "use strict";
-/**
- * Batch processor for database operations to improve performance
- * Groups multiple operations together and executes them in batches
- */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -39,36 +35,26 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatBatchProcessor = exports.BatchProcessor = void 0;
 class BatchProcessor {
-    /**
-     * Add an operation to a batch for later processing
-     */
     static addToBatch(type, operation) {
         if (!this.batches.has(type)) {
             this.batches.set(type, []);
         }
         const batch = this.batches.get(type);
         batch.push(operation);
-        // Process immediately if batch size limit reached
         if (batch.length >= this.MAX_BATCH_SIZE) {
             this.processBatch(type);
             return;
         }
-        // Clear existing timer
         if (this.timers.has(type)) {
             clearTimeout(this.timers.get(type));
         }
-        // Set new timer to process batch
         const timer = setTimeout(() => this.processBatch(type), this.BATCH_TIMEOUT);
         this.timers.set(type, timer);
     }
-    /**
-     * Process all operations in a batch
-     */
     static async processBatch(type) {
         const batch = this.batches.get(type) || [];
         if (batch.length === 0)
             return;
-        // Clear the batch and timer
         this.batches.set(type, []);
         const timer = this.timers.get(type);
         if (timer) {
@@ -77,9 +63,7 @@ class BatchProcessor {
         }
         console.log(`🔄 Processing batch of ${batch.length} ${type} operations`);
         try {
-            // Process all operations in parallel
             const results = await Promise.allSettled(batch.map(op => op()));
-            // Log any failures
             const failures = results.filter(result => result.status === 'rejected');
             if (failures.length > 0) {
                 console.error(`❌ ${failures.length} operations failed in ${type} batch:`, failures);
@@ -92,16 +76,10 @@ class BatchProcessor {
             console.error(`❌ Batch processing failed for ${type}:`, error);
         }
     }
-    /**
-     * Force process all pending batches immediately
-     */
     static async flushAll() {
         const batchTypes = Array.from(this.batches.keys());
         await Promise.all(batchTypes.map(type => this.processBatch(type)));
     }
-    /**
-     * Get current batch statistics
-     */
     static getStats() {
         const stats = {};
         for (const [type, batch] of this.batches.entries()) {
@@ -113,20 +91,13 @@ class BatchProcessor {
 exports.BatchProcessor = BatchProcessor;
 BatchProcessor.batches = new Map();
 BatchProcessor.timers = new Map();
-BatchProcessor.BATCH_TIMEOUT = 100; // Process batch after 100ms
-BatchProcessor.MAX_BATCH_SIZE = 50; // Process batch if it reaches 50 items
-/**
- * Convenience functions for common batch operations
- */
+BatchProcessor.BATCH_TIMEOUT = 100;
+BatchProcessor.MAX_BATCH_SIZE = 50;
 class ChatBatchProcessor {
-    /**
-     * Batch save message operations
-     */
     static saveMessage(chatId, message) {
         return new Promise((resolve, reject) => {
             BatchProcessor.addToBatch('save-message', async () => {
                 try {
-                    // Import Chat model directly to avoid circular dependencies
                     const Chat = (await Promise.resolve().then(() => __importStar(require('../models/Chat')))).default;
                     const chat = await Chat.findOne({ id: chatId, isActive: true });
                     if (!chat) {
@@ -153,14 +124,10 @@ class ChatBatchProcessor {
             });
         });
     }
-    /**
-     * Batch memory operations
-     */
     static saveMemory(userId, message, metadata) {
         return new Promise((resolve, reject) => {
             BatchProcessor.addToBatch('save-memory', async () => {
                 try {
-                    // Import memory service dynamically
                     const { addMemories } = await Promise.resolve().then(() => __importStar(require('@mem0/vercel-ai-provider')));
                     const result = await addMemories([message], {
                         user_id: userId,
@@ -179,3 +146,4 @@ class ChatBatchProcessor {
     }
 }
 exports.ChatBatchProcessor = ChatBatchProcessor;
+//# sourceMappingURL=batchProcessor.js.map

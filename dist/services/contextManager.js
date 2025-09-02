@@ -1,36 +1,30 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateContext = exports.manageContext = exports.truncateMessages = exports.getTokenLimit = exports.calculateMessageTokens = exports.estimateTokens = void 0;
-// Token limits for different models (with safety buffer)
 const MODEL_TOKEN_LIMITS = {
-    'google': 150000, // Gemini 2.5 Flash - buffer from 163840 max
-    'deepseek-r1': 150000, // Based on error message showing ~163840 limit
-    'llama-3.1': 120000, // Conservative estimate
-    'gpt-oss': 8000, // Conservative estimate for smaller models
+    'google': 150000,
+    'deepseek-r1': 150000,
+    'llama-3.1': 120000,
+    'gpt-oss': 8000,
 };
-// Rough token estimation (words * 1.3 for average token-to-word ratio)
 const estimateTokens = (text) => {
-    // Simple estimation: split by whitespace and multiply by average token ratio
     const words = text.trim().split(/\s+/).length;
     return Math.ceil(words * 1.3);
 };
 exports.estimateTokens = estimateTokens;
-// Calculate total tokens in messages
 const calculateMessageTokens = (messages) => {
     let totalTokens = 0;
     for (const message of messages) {
-        // Handle different message formats
         if (message.parts && Array.isArray(message.parts)) {
             for (const part of message.parts) {
                 if (part.type === 'text' && part.text) {
                     totalTokens += (0, exports.estimateTokens)(part.text);
                 }
-                // Add minimal tokens for other content types
                 else if (part.type === 'image') {
-                    totalTokens += 100; // Rough estimate for image processing
+                    totalTokens += 100;
                 }
                 else if (part.type === 'file') {
-                    totalTokens += 50; // Minimal for file references
+                    totalTokens += 50;
                 }
             }
         }
@@ -46,33 +40,27 @@ const calculateMessageTokens = (messages) => {
                 }
             }
         }
-        // Add overhead for message structure
         totalTokens += 10;
     }
     return totalTokens;
 };
 exports.calculateMessageTokens = calculateMessageTokens;
-// Get token limit for a model
 const getTokenLimit = (modelKey) => {
-    return MODEL_TOKEN_LIMITS[modelKey] || 8000; // Default conservative limit
+    return MODEL_TOKEN_LIMITS[modelKey] || 8000;
 };
 exports.getTokenLimit = getTokenLimit;
-// Truncate messages to fit within token limit
 const truncateMessages = (messages, modelKey, systemPromptTokens = 500) => {
     const tokenLimit = (0, exports.getTokenLimit)(modelKey);
-    const availableTokens = tokenLimit - systemPromptTokens - 1000; // Reserve tokens for response
+    const availableTokens = tokenLimit - systemPromptTokens - 1000;
     console.log(`🎯 Token management: Limit=${tokenLimit}, Available=${availableTokens}, Model=${modelKey}`);
     if (messages.length === 0)
         return messages;
-    // Always keep the last message (current user input)
     const lastMessage = messages[messages.length - 1];
     const lastMessageTokens = (0, exports.calculateMessageTokens)([lastMessage]);
     if (lastMessageTokens > availableTokens) {
         console.warn(`⚠️ Single message too long: ${lastMessageTokens} tokens`);
-        // If even the last message is too long, we need to truncate it
         return [truncateSingleMessage(lastMessage, availableTokens)];
     }
-    // Work backwards from the last message to include as many as possible
     const truncatedMessages = [lastMessage];
     let currentTokens = lastMessageTokens;
     for (let i = messages.length - 2; i >= 0; i--) {
@@ -82,10 +70,8 @@ const truncateMessages = (messages, modelKey, systemPromptTokens = 500) => {
             currentTokens += messageTokens;
         }
         else {
-            // If we can't fit the entire message, try to include a summary
             const remainingTokens = availableTokens - currentTokens;
             if (remainingTokens > 200 && i < messages.length - 10) {
-                // Add a summary of the truncated conversation
                 const summaryMessage = {
                     role: 'system',
                     content: `[Previous conversation truncated due to length. Total messages removed: ${i + 1}]`
@@ -101,7 +87,6 @@ const truncateMessages = (messages, modelKey, systemPromptTokens = 500) => {
     return truncatedMessages;
 };
 exports.truncateMessages = truncateMessages;
-// Truncate a single message if it's too long
 const truncateSingleMessage = (message, maxTokens) => {
     if (message.parts && Array.isArray(message.parts)) {
         const truncatedParts = [];
@@ -114,7 +99,6 @@ const truncateSingleMessage = (message, maxTokens) => {
                     currentTokens += partTokens;
                 }
                 else {
-                    // Truncate this text part
                     const availableTokens = maxTokens - currentTokens;
                     if (availableTokens > 50) {
                         const words = part.text.split(' ');
@@ -129,7 +113,6 @@ const truncateSingleMessage = (message, maxTokens) => {
                 }
             }
             else {
-                // Keep non-text parts as they use minimal tokens
                 truncatedParts.push(part);
                 currentTokens += part.type === 'image' ? 100 : 50;
             }
@@ -150,21 +133,17 @@ const truncateSingleMessage = (message, maxTokens) => {
     }
     return message;
 };
-// Smart context management with conversation summarization
 const manageContext = async (messages, modelKey) => {
     const totalTokens = (0, exports.calculateMessageTokens)(messages);
     const tokenLimit = (0, exports.getTokenLimit)(modelKey);
     console.log(`📊 Context analysis: ${totalTokens} tokens, limit: ${tokenLimit}`);
-    // If we're within limits, return as-is
-    if (totalTokens <= tokenLimit * 0.8) { // Use 80% as a safety margin
+    if (totalTokens <= tokenLimit * 0.8) {
         return messages;
     }
-    // If we exceed limits, truncate
     console.log(`🚨 Context limit exceeded, truncating messages`);
     return (0, exports.truncateMessages)(messages, modelKey);
 };
 exports.manageContext = manageContext;
-// Validate context before sending to model
 const validateContext = (messages, modelKey) => {
     const tokens = (0, exports.calculateMessageTokens)(messages);
     const limit = (0, exports.getTokenLimit)(modelKey);
@@ -180,3 +159,4 @@ const validateContext = (messages, modelKey) => {
     return result;
 };
 exports.validateContext = validateContext;
+//# sourceMappingURL=contextManager.js.map

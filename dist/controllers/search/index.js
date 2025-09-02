@@ -9,7 +9,6 @@ const searchapi_1 = require("@langchain/community/document_loaders/web/searchapi
 const prompts_1 = require("@langchain/core/prompts");
 const combine_documents_1 = require("langchain/chains/combine_documents");
 const retrieval_1 = require("langchain/chains/retrieval");
-// Initialize LangChain components
 let llm;
 let embeddings;
 let searchApiKey;
@@ -35,9 +34,7 @@ const initializeLangChain = () => {
         }
     }
 };
-// Initialize on module load
 initializeLangChain();
-// Single function to perform web search with AI
 const performWebSearchWithAI = async (query, userQuestion) => {
     try {
         console.log("Performing web search with AI");
@@ -48,7 +45,6 @@ const performWebSearchWithAI = async (query, userQuestion) => {
                 sources: []
             };
         }
-        // Use SearchApiLoader to load web search results (single API call)
         let docs;
         try {
             const loader = new searchapi_1.SearchApiLoader({
@@ -72,7 +68,6 @@ const performWebSearchWithAI = async (query, userQuestion) => {
                 sources: []
             };
         }
-        // Convert documents to search results format for display
         const searchResults = docs.map((doc, index) => ({
             title: doc.metadata.title || `Search Result ${index + 1}`,
             snippet: doc.pageContent.substring(0, 200) + '...',
@@ -80,7 +75,6 @@ const performWebSearchWithAI = async (query, userQuestion) => {
             source: 'Google Search'
         }));
         console.log("Search results:", searchResults);
-        // Split documents for processing
         const textSplitter = new textsplitters_1.RecursiveCharacterTextSplitter({
             chunkSize: 800,
             chunkOverlap: 100,
@@ -88,10 +82,8 @@ const performWebSearchWithAI = async (query, userQuestion) => {
         console.log("Splitting documents");
         const splitDocs = await textSplitter.splitDocuments(docs);
         console.log("Split docs:", splitDocs);
-        // Create vector store
         const vectorStore = await memory_1.MemoryVectorStore.fromDocuments(splitDocs, embeddings);
         console.log("Vector store:", vectorStore);
-        // Create question answering prompt
         const questionAnsweringPrompt = prompts_1.ChatPromptTemplate.fromMessages([
             [
                 "system",
@@ -109,31 +101,27 @@ const performWebSearchWithAI = async (query, userQuestion) => {
             ["human", "{input}"],
         ]);
         console.log("Question answering prompt:", questionAnsweringPrompt);
-        // Create document chain
         const combineDocsChain = await (0, combine_documents_1.createStuffDocumentsChain)({
             llm,
             prompt: questionAnsweringPrompt,
         });
         console.log("Combine docs chain:", combineDocsChain);
-        // Create retrieval chain
         const chain = await (0, retrieval_1.createRetrievalChain)({
-            retriever: vectorStore.asRetriever({ k: 5 }), // Get top 5 most relevant documents
+            retriever: vectorStore.asRetriever({ k: 5 }),
             combineDocsChain,
         });
         console.log("Chain:", chain);
-        // Get answer
         const result = await chain.invoke({
             input: userQuestion,
         });
         console.log("Result:", result);
-        // Extract sources from the documents
         const sources = docs.map((doc) => doc.metadata.url || doc.metadata.source || 'Unknown source');
         console.log("Sources:", sources);
         console.log("Returning result");
         return {
             answer: result.answer,
             searchResults,
-            sources: [...new Set(sources)] // Remove duplicates
+            sources: [...new Set(sources)]
         };
     }
     catch (error) {
@@ -146,3 +134,4 @@ const performWebSearchWithAI = async (query, userQuestion) => {
     }
 };
 exports.performWebSearchWithAI = performWebSearchWithAI;
+//# sourceMappingURL=index.js.map

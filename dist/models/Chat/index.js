@@ -103,7 +103,7 @@ const ChatSchema = new mongoose_1.Schema({
                         type: String,
                     },
                     image: {
-                        type: String, // For base64 images
+                        type: String,
                     },
                     prompt: {
                         type: String,
@@ -136,14 +136,13 @@ const ChatSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Update the updatedAt field before saving
 ChatSchema.pre('save', function (next) {
     this.updatedAt = new Date();
     next();
 });
-// Create compound indexes for better query performance
 ChatSchema.index({ id: 1, isActive: 1 });
 ChatSchema.index({ userId: 1, isActive: 1 });
 ChatSchema.index({ createdAt: -1 });
 ChatSchema.index({ userId: 1, createdAt: -1 });
 exports.default = mongoose_1.default.model('Chat', ChatSchema);
+//# sourceMappingURL=index.js.map

@@ -15,3 +15,4 @@ const connectDB = async () => {
     }
 };
 exports.default = connectDB;
+//# sourceMappingURL=index.js.map

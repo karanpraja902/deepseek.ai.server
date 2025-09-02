@@ -9,15 +9,12 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const uuid_1 = require("uuid");
-// Initialize static user
 exports.initializeStaticUser = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const staticUserId = 'static_user_karanao';
-        // Check if static user already exists
         let staticUser = await User_1.default.findOne({ id: staticUserId });
         console.log(staticUser);
         if (!staticUser) {
-            // Create static user
             const hashedPassword = await bcryptjs_1.default.hash('static_password', 10);
             staticUser = new User_1.default({
                 id: staticUserId,
@@ -66,7 +63,6 @@ exports.initializeStaticUser = (0, express_async_handler_1.default)(async (req, 
         });
     }
 });
-// Get user with memory
 exports.getUserWithMemory = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { userId } = req.query;
@@ -108,7 +104,6 @@ exports.getUserWithMemory = (0, express_async_handler_1.default)(async (req, res
         });
     }
 });
-// User login
 exports.login = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -135,7 +130,6 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        // Generate JWT token
         const payload = {
             userId: user.id,
             email: user.email
@@ -165,7 +159,6 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
-// Update user memory
 exports.updateUserMemory = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { userId } = req.params;
@@ -205,7 +198,6 @@ exports.updateUserMemory = (0, express_async_handler_1.default)(async (req, res)
         });
     }
 });
-// User registration
 exports.register = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -216,7 +208,6 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        // Check if user already exists
         const existingUser = await User_1.default.findOne({ email });
         if (existingUser) {
             res.status(400).json({
@@ -225,9 +216,7 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        // Hash password
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-        // Create new user
         const user = new User_1.default({
             id: (0, uuid_1.v4)(),
             email,
@@ -244,9 +233,7 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
             memory: {}
         });
         await user.save();
-        // Generate JWT token
         const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
-        // Set cookie
         res.cookie("auth_token", token, {
             httpOnly: true,
             sameSite: "none",
@@ -276,7 +263,6 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
-// Get current user
 exports.getCurrentUser = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const userId = req.user?.userId;
@@ -311,13 +297,9 @@ exports.getCurrentUser = (0, express_async_handler_1.default)(async (req, res) =
         });
     }
 });
-// Google OAuth authentication
 const googleAuth = (req, res) => {
-    // This function will be handled by passport middleware
-    // The actual authentication logic is in the Google strategy
 };
 exports.googleAuth = googleAuth;
-// Google OAuth callback
 exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         console.log("google callback request", req);
@@ -336,7 +318,6 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
         res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
     }
 });
-// User logout
 const logout = (req, res) => {
     res.clearCookie("auth_token", {
         httpOnly: true,
@@ -349,3 +330,4 @@ const logout = (req, res) => {
     });
 };
 exports.logout = logout;
+//# sourceMappingURL=index.js.map

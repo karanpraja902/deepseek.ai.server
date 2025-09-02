@@ -20,20 +20,18 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         let user = await User_1.default.findOne({ email: profile.emails[0].value });
         console.log({ "user": user, "message": "Existing user found" });
         if (user) {
-            // Update avatar if not set
             if (!user.avatar && profile.photos && profile.photos.length > 0) {
                 user.avatar = profile.photos[0].value;
                 await user.save();
             }
         }
         else {
-            // Create new user
             user = new User_1.default({
                 id: (0, uuid_1.v4)(),
                 name: profile.displayName || profile.emails[0].value.split('@')[0],
                 email: profile.emails[0].value,
                 username: profile.emails[0].value.split('@')[0],
-                password: 'google_oauth_user', // Placeholder password for Google users
+                password: 'google_oauth_user',
                 avatar: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : '',
                 preferences: {
                     theme: 'light',
@@ -55,3 +53,4 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
     }
 }));
 exports.default = passport_1.default;
+//# sourceMappingURL=index.js.map

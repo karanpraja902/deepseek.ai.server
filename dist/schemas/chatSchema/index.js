@@ -2,20 +2,18 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIChatRequestSchema = exports.UpdateChatTitleRequestSchema = exports.AddMessageRequestSchema = exports.CreateChatRequestSchema = exports.ChatSchema = exports.validateAIChatRequest = exports.validateUpdateChatTitleRequest = exports.validateAddMessageRequest = exports.validateCreateChatRequest = exports.validateChat = void 0;
 const zod_1 = require("zod");
-// File schema
 const FileSchema = zod_1.z.object({
     filename: zod_1.z.string().min(1, "Filename is required"),
     url: zod_1.z.string().url("Valid URL is required"),
     mediaType: zod_1.z.string().min(1, "Media type is required"),
     pdfAnalysis: zod_1.z.string().optional(),
 });
-// Message schema
 const MessageSchema = zod_1.z.object({
-    _id: zod_1.z.string().optional(), // MongoDB ObjectId as string
+    _id: zod_1.z.string().optional(),
     role: zod_1.z.enum(['user', 'assistant'], {
         errorMap: () => ({ message: "Role must be either 'user' or 'assistant'" })
     }),
-    content: zod_1.z.string().optional(), // Made optional since parts can contain the content
+    content: zod_1.z.string().optional(),
     timestamp: zod_1.z.date().optional().default(() => new Date()),
     files: zod_1.z.array(FileSchema).optional().default([]),
     parts: zod_1.z.array(zod_1.z.object({
@@ -26,7 +24,6 @@ const MessageSchema = zod_1.z.object({
         filename: zod_1.z.string().optional(),
     })).optional().default([]),
 });
-// Chat schema
 const ChatSchema = zod_1.z.object({
     id: zod_1.z.string().min(1, "Chat ID is required"),
     userId: zod_1.z.string().min(1, "User ID is required"),
@@ -37,15 +34,13 @@ const ChatSchema = zod_1.z.object({
     isActive: zod_1.z.boolean().optional().default(true),
 });
 exports.ChatSchema = ChatSchema;
-// Create chat request schema
 const CreateChatRequestSchema = zod_1.z.object({
     userId: zod_1.z.string().min(1, "User ID is required"),
 });
 exports.CreateChatRequestSchema = CreateChatRequestSchema;
-// Add message request schema
 const AddMessageRequestSchema = zod_1.z.object({
     role: zod_1.z.enum(['user', 'assistant']),
-    content: zod_1.z.string().optional(), // Made optional since parts can contain the content
+    content: zod_1.z.string().optional(),
     files: zod_1.z.array(FileSchema).optional().default([]),
     parts: zod_1.z.array(zod_1.z.object({
         type: zod_1.z.string(),
@@ -53,7 +48,7 @@ const AddMessageRequestSchema = zod_1.z.object({
         mediaType: zod_1.z.string().optional(),
         url: zod_1.z.string().optional(),
         filename: zod_1.z.string().optional(),
-        image: zod_1.z.string().optional(), // For base64 images
+        image: zod_1.z.string().optional(),
         prompt: zod_1.z.string().optional(),
         generatedAt: zod_1.z.string().optional(),
     })).optional().default([]),
@@ -63,11 +58,9 @@ const AddMessageRequestSchema = zod_1.z.object({
         isImageGeneration: zod_1.z.boolean().optional().default(false),
     }).optional().default({}),
 }).refine((data) => {
-    // Allow empty content for assistant messages (streaming responses can start empty)
     if (data.role === 'assistant') {
         return true;
     }
-    // For user messages, ensure either content or parts with text content is provided
     if (data.content && data.content.trim()) {
         return true;
     }
@@ -82,12 +75,10 @@ const AddMessageRequestSchema = zod_1.z.object({
     path: ["content"]
 });
 exports.AddMessageRequestSchema = AddMessageRequestSchema;
-// Update chat title request schema
 const UpdateChatTitleRequestSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, "Title is required").max(100, "Title too long"),
 });
 exports.UpdateChatTitleRequestSchema = UpdateChatTitleRequestSchema;
-// AI Chat request schema
 const AIChatRequestSchema = zod_1.z.object({
     messages: zod_1.z.array(zod_1.z.object({
         role: zod_1.z.enum(['user', 'assistant']),
@@ -122,7 +113,6 @@ const AIChatRequestSchema = zod_1.z.object({
     enableWebSearch: zod_1.z.boolean().optional().default(false),
 });
 exports.AIChatRequestSchema = AIChatRequestSchema;
-// Validation functions
 const validateChat = (data) => {
     try {
         return { success: true, data: ChatSchema.parse(data) };
@@ -170,3 +160,4 @@ const validateAIChatRequest = (data) => {
     }
 };
 exports.validateAIChatRequest = validateAIChatRequest;
+//# sourceMappingURL=index.js.map
