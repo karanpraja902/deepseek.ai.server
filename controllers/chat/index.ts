@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Chat from '../../models/Chat';
 import User from '../../models/User';
 import asyncHandler from 'express-async-handler';
-import { nanoid } from 'nanoid';
 import { 
   validateCreateChatRequest, 
   validateAddMessageRequest, 
@@ -27,6 +26,8 @@ export const createChat = asyncHandler(async (req: Request, res: Response): Prom
     console.log("validation:", validation);
     const { userId } = validation.data!;
     
+    // Dynamic import for nanoid (ES module)
+    const { nanoid } = await import('nanoid');
     const chatId = nanoid();
     
     const newChat = new Chat({
