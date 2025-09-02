@@ -1,6 +1,6 @@
-# Source files (not needed in production)
-*.ts
-!dist/**/*.js
+# Source files (needed for build, but exclude from final deployment)
+# *.ts
+# !dist/**/*.js
 
 # Development files
 .env
