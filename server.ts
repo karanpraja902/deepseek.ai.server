@@ -72,6 +72,14 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/stripe', stripeRoutes);
 // Validation error handling middleware
 app.use(handleValidationError);
+const welcomeStrings = [
+  "Hello Express!",
+  "To learn more about Karan Prajapat on Vercel, visit https://vercel.com/docs/frameworks/backend/express",
+]
+
+app.get('/', (_req, res) => {
+  res.send(welcomeStrings.join('\n\n'))
+})
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
