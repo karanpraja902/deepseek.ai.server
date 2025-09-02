@@ -72,6 +72,10 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/stripe', stripeRoutes);
 // Validation error handling middleware
 app.use(handleValidationError);
+const welcomeStrings = [
+  "Hello Express!",
+  "To learn more about Express on Vercel, visit https://vercel.com/docs/frameworks/backend/express",
+]
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -81,7 +85,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
-
+app.get('/', (_req, res) => {
+  res.send(welcomeStrings.join('\n\n'))
+})
 // 404 handler
 app.use('*', (req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
