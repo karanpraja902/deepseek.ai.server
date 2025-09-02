@@ -75,7 +75,7 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+
 
 # Gatsby files
 .cache/
@@ -169,7 +169,7 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+
 
 # Gatsby files
 .cache/
@@ -211,8 +211,7 @@ yarn-error.log*
 *.tsbuildinfo
 
 # Build outputs
-dist/
-build/
+
 
 # Database files
 *.db
