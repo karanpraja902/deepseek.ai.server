@@ -92,7 +92,7 @@ backend/
 Create a `.env` file in the backend directory with the following variables:
 
 ```env
-# Server Configuration
+# Server Setup 
 PORT=5000
 NODE_ENV=development
 
