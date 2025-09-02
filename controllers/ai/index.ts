@@ -77,7 +77,7 @@ const mem0 = createMem0({
   },
   // Optional Mem0 Global Config
   mem0Config: {
-    enable_graph: true,
+    // Configure Mem0 settings here if needed
   },
 });
 
