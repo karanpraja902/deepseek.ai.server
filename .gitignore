@@ -241,4 +241,7 @@ config/credentials.json
 
 # Google Cloud credentials
 clever-bee-468418-s7-9d2a25e023ff.json
-*.json
+
+# Specific JSON files to ignore (not all JSON files)
+package-lock.json
+tsconfig.tsbuildinfo

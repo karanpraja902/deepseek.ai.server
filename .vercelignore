@@ -1,0 +1,53 @@
+# Source files (not needed in production)
+*.ts
+!dist/**/*.js
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Documentation
+*.md
+!README.md
+
+# Development dependencies
+node_modules/.cache
+node_modules/.bin
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp/
+tmp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Build artifacts (except dist)
+build/
+out/
