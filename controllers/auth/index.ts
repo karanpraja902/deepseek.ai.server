@@ -95,6 +95,7 @@ export const getUserWithMemory = asyncHandler(async (req: Request, res: Response
     const response: ApiResponse<any> = {
       success: true,
       data: {
+        
         user: {
           id: user.id,
           email: user.email,
@@ -119,7 +120,7 @@ export const getUserWithMemory = asyncHandler(async (req: Request, res: Response
 // User login
 export const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log("Login request");
+    console.log("Login requestttt");
     const { email, password } = req.body;
     
     if (!email || !password) {
@@ -131,6 +132,7 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     }
     
     const user = await User.findOne({ email, isActive: true });
+    console.log("user", user);
     
     if (!user) {
       res.status(401).json({ 
@@ -165,17 +167,18 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     console.log("login token", token);
     
     // Set secure HTTP-only cookie
-    res.cookie("auth_token", token, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true, // Required when sameSite is 'none'
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-    });
+    // res.cookie("auth_token", token, {
+    //   httpOnly: true,
+    //   sameSite: "none",
+    //   secure: true, // Required when sameSite is 'none'
+    //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+    // });
 
     const response: ApiResponse<any> = {
       success: true,
       message: 'Login successful',
       data: {
+        token: token,
         user: {
           id: user.id,
           email: user.email,
@@ -311,6 +314,7 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
       success: true,
       message: "User registered successfully",
       data: {
+        token: token,
         user: {
           id: user.id,
           name: user.name,
@@ -378,8 +382,8 @@ export const googleAuth = (req: Request, res: Response): void => {
 // Google OAuth callback
 export const googleCallback = asyncHandler(async (req: any, res: Response): Promise<void> => {
   try {
-    console.log("google callback request");
-    console.log({"request": req.user.email});
+    console.log("=== Google OAuth Callback ===");
+    console.log("User from Google:", req.user);
     console.log("Request headers:", req.headers);
     console.log("User agent:", req.get('User-Agent'));
     
@@ -444,16 +448,30 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     }
     
     // Set secure HTTP-only cookie
-    res.cookie("auth_token", token, cookieOptions);
+    // res.cookie("auth_token", token, cookieOptions);
     
     console.log("Cookie set with options:", cookieOptions);
     console.log("Response headers before redirect:", res.getHeaders());
     
-    // Use 302 redirect for faster bounce and better Chrome compatibility
-    // Add a query parameter to help with debugging and include a temporary token for fallback
-    const tempToken = Buffer.from(token).toString('base64').slice(0, 16); // Short token for debugging
-    const redirectUrl = `${clientUrl}/auth/success?oauth=google&t=${Date.now()}&temp=${tempToken}`;
-    res.redirect(302, redirectUrl);
+    // Return JSON response with token instead of redirecting
+    const response: ApiResponse<any> = {
+      success: true,
+      message: 'Google authentication successful',
+      data: {
+        token: token,
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          username: req.user.username,
+          avatar: req.user.avatar,
+          preferences: req.user.preferences,
+        }
+      }
+    };
+    
+    console.log("Sending Google auth response:", response);
+    res.status(200).json(response);
   } catch (error: any) {
     console.error('Google callback error:', error);
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
