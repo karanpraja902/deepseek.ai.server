@@ -9,7 +9,8 @@ import {
   getCurrentUser,
   googleAuth,
   googleCallback,
-  logout
+  logout,
+  debugCookies
 } from '../../controllers/auth';
 import { authMiddleware } from '../../middleware/auth';
 
@@ -45,6 +46,9 @@ router.get('/google/callback',
 
 // Logout user
 router.post('/logout', logout);
+
+// Debug cookies endpoint
+router.get('/debug/cookies', debugCookies);
 
 // Update user memory
 router.put('/user/:userId/memory', updateUserMemory);
