@@ -399,6 +399,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
       'https://deepseek-ai-web.vercel.app',
       'https://deepseek-ai-client.vercel.app',
       'http://localhost:3000',
+      'https://deepseek-ai-client.vercel.app', // Production client
       process.env.CLIENT_URL
     ].filter(Boolean);
     
@@ -474,7 +475,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     res.status(200).json(response);
   } catch (error: any) {
     console.error('Google callback error:', error);
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
     res.redirect(`${clientUrl}/sign-in?error=auth_failed`);
   }
 });
