@@ -44,7 +44,7 @@ const chatSchema_1 = require("../../schemas/chatSchema");
 exports.createChat = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         // Validate request body
-        console.log("createChat controller", req.body);
+        console.log("createChat controller");
         const validation = (0, chatSchema_1.validateCreateChatRequest)(req.body);
         if (!validation.success) {
             res.status(400).json({
@@ -159,7 +159,7 @@ exports.getUserChats = (0, express_async_handler_1.default)(async (req, res) => 
 exports.addMessage = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         // Validate request body
-        console.log("addMessage:", req.body);
+        console.log("addMessage:");
         const validation = (0, chatSchema_1.validateAddMessageRequest)(req.body);
         if (!validation.success) {
             res.status(400).json({
@@ -169,7 +169,7 @@ exports.addMessage = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        console.log("addMessage:", req.body);
+        console.log("addMessage:");
         const { id } = req.params;
         console.log("id:", id);
         const { role, content, files, parts, metadata } = validation.data;

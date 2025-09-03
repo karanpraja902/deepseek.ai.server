@@ -111,6 +111,7 @@ exports.getUserWithMemory = (0, express_async_handler_1.default)(async (req, res
 // User login
 exports.login = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log("Login request");
         const { email, password } = req.body;
         if (!email || !password) {
             res.status(400).json({
@@ -140,12 +141,20 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
             userId: user.id,
             email: user.email
         };
+        console.log("login payload", payload);
         const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
+        console.log("login token", token);
+        // Set secure HTTP-only cookie
+        res.cookie("auth_token", token, {
+            httpOnly: true,
+            sameSite: "none",
+            secure: true, // Required when sameSite is 'none'
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+        });
         const response = {
             success: true,
             message: 'Login successful',
             data: {
-                token,
                 user: {
                     id: user.id,
                     email: user.email,
@@ -155,6 +164,7 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
                 }
             }
         };
+        console.log("login response", response);
         res.status(200).json(response);
     }
     catch (error) {
@@ -208,6 +218,7 @@ exports.updateUserMemory = (0, express_async_handler_1.default)(async (req, res)
 // User registration
 exports.register = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log("Register request");
         const { name, email, password } = req.body;
         if (!name || !email || !password) {
             res.status(400).json({
@@ -250,13 +261,13 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
         res.cookie("auth_token", token, {
             httpOnly: true,
             sameSite: "none",
-            secure: true,
+            secure: true, // Required when sameSite is 'none'
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
         });
         const response = {
             success: true,
             message: "User registered successfully",
             data: {
-                token,
                 user: {
                     id: user.id,
                     name: user.name,
@@ -320,16 +331,33 @@ exports.googleAuth = googleAuth;
 // Google OAuth callback
 exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        console.log("google callback request", req);
+        console.log("google callback request");
         console.log({ "request": req.user.email });
+        console.log("Request headers:", req.headers);
+        console.log("User agent:", req.get('User-Agent'));
         const token = jsonwebtoken_1.default.sign({ userId: req.user.id, email: req.user.email }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: "30d" });
         console.log("google callback token", token);
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+        // Set secure HTTP-only cookie - no token in URL
         res.cookie("auth_token", token, {
             httpOnly: true,
             sameSite: "none",
-            secure: true,
+            secure: true, // Required when sameSite is 'none'
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined // Set domain for production
         });
-        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?token=${token}`);
+        console.log("Cookie set with options:", {
+            httpOnly: true,
+            sameSite: "none",
+            secure: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
+        });
+        console.log("Response headers before redirect:", res.getHeaders());
+        // Redirect to success page without token in URL
+        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/success`);
     }
     catch (error) {
         console.error('Google callback error:', error);
@@ -338,11 +366,22 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
 });
 // User logout
 const logout = (req, res) => {
+    console.log("Logout called - clearing cookies");
+    console.log("Current cookies:", req.cookies);
+    // Clear cookie with the same options used when setting it
     res.clearCookie("auth_token", {
         httpOnly: true,
         sameSite: 'none',
         secure: true
     });
+    // Set cookie to expire immediately as an additional measure
+    res.cookie("auth_token", "", {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        expires: new Date(0) // Expire immediately
+    });
+    console.log("Cookies cleared successfully");
     res.status(200).json({
         success: true,
         message: "User logout successful"

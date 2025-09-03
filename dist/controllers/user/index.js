@@ -47,7 +47,7 @@ exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) =
 // Update user profile
 exports.updateUserProfile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        console.log('updateUserProfile', req.body);
+        console.log('updateUserProfile');
         const { userId } = req.params;
         const { name, avatar, preferences, subscription } = req.body;
         const updateData = {};

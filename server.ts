@@ -39,12 +39,24 @@ app.use(cors({
 }));
 app.use(passport.initialize());
 
-// Rate limiting
+// Rate limiting - more lenient for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 for dev, 100 for prod
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  }
 });
-app.use('/api/', limiter);
+
+// Apply rate limiting to all API routes except auth (to prevent login/logout issues)
+app.use('/api/chat', limiter);
+app.use('/api/user', limiter);
+app.use('/api/pdf', limiter);
+app.use('/api/cloudinary', limiter);
+app.use('/api/ai', limiter);
+app.use('/api/weather', limiter);
+app.use('/api/stripe', limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

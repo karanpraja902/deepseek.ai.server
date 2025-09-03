@@ -19,6 +19,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         console.log('Google profile:', profile);
         let user = await User_1.default.findOne({ email: profile.emails[0].value });
         console.log({ "user": user, "message": "Existing user found" });
+        console.log("user callback", user);
         if (user) {
             // Update avatar if not set
             if (!user.avatar && profile.photos && profile.photos.length > 0) {
@@ -44,6 +45,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
                 },
                 memory: {}
             });
+            console.log("user212", user);
             await user.save();
             console.log('New Google user created:', user.email);
         }
