@@ -406,6 +406,11 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Origin', allowedOrigin);
     
+    // Add headers to reduce bounce tracking detection
+    res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    
     console.log('OAuth callback - Request origin:', requestOrigin);
     console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
     
@@ -430,8 +435,9 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     
     console.log("Response headers before redirect:", res.getHeaders());
     
-    // Redirect to success page without token in URL
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/success`);
+    // Use 302 redirect for faster bounce and better Chrome compatibility
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    res.redirect(302, `${clientUrl}/auth/success`);
   } catch (error: any) {
     console.error('Google callback error:', error);
     res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
