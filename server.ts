@@ -36,6 +36,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   'http://localhost:3000', // Local development
   'https://deepseek-ai-web.vercel.app', // Production frontend
+  'https://deepseek-ai-client.vercel.app', // Alternative client URL
   process.env.CLIENT_URL // Custom client URL from environment
 ].filter(Boolean); // Remove any undefined values
 
@@ -46,11 +47,26 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
+    // Check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
+    } else if (process.env.NODE_ENV === 'development') {
+      // In development, allow any localhost origins
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        callback(null, true);
+      } else {
+        console.warn('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      // In production, also allow any vercel.app subdomain for your project
+      if (origin.includes('deepseek-ai') && origin.includes('vercel.app')) {
+        console.log('Allowing Vercel deployment origin:', origin);
+        callback(null, true);
+      } else {
+        console.warn('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   credentials: true,

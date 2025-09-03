@@ -20,7 +20,11 @@ router.post('/register', auth_1.register);
 router.get('/me', auth_2.authMiddleware, auth_1.getCurrentUser);
 // Google OAuth routes
 console.log("google route");
-router.get("/google", passport_1.default.authenticate('google', { scope: ['profile', 'email'] }));
+router.get("/google", passport_1.default.authenticate('google', {
+    scope: ['profile', 'email'],
+    accessType: 'offline',
+    prompt: 'select_account consent'
+}));
 router.get('/google/callback', passport_1.default.authenticate('google', { session: false, failureRedirect: '/sign-in' }), auth_1.googleCallback);
 // Logout user
 router.post('/logout', auth_1.logout);
