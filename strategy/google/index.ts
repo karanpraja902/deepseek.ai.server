@@ -7,13 +7,29 @@ import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
 console.log("google strategy");
 console.log("Environment variables:");
+console.log("- NODE_ENV:", process.env.NODE_ENV);
 console.log("- BACKEND_URL:", process.env.BACKEND_URL);
 console.log("- PORT:", process.env.PORT);
 console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "SET" : "NOT SET");
 console.log("- GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "SET" : "NOT SET");
 
-const callbackURL = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+// Construct callback URL with proper protocol for production
+const backendUrl = process.env.BACKEND_URL || 
+  (process.env.NODE_ENV === 'production' ? 'https://your-production-domain.com' : 'http://localhost:5000');
+const callbackURL = `${backendUrl}/api/auth/google/callback`;
+
 console.log("Google OAuth callback URL:", callbackURL);
+
+// Validate environment variables
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  console.error("❌ Missing required Google OAuth environment variables!");
+  console.error("Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET");
+}
+
+if (process.env.NODE_ENV === 'production' && !process.env.BACKEND_URL) {
+  console.warn("⚠️ BACKEND_URL not set in production! Using fallback URL.");
+  console.warn("Please set BACKEND_URL to your production domain (e.g., https://yourdomain.com)");
+}
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

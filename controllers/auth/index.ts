@@ -390,9 +390,23 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     );
     console.log("google callback token", token);
     
-    // Set CORS headers explicitly
+    // Set CORS headers explicitly - allow the requesting origin if it's in our allowed list
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://deepseek-ai-web.vercel.app',
+      process.env.CLIENT_URL
+    ].filter(Boolean);
+    
+    const requestOrigin = req.get('Origin') || req.get('Referer');
+    const allowedOrigin = allowedOrigins.find(origin => 
+      requestOrigin && requestOrigin.startsWith(origin)
+    ) || allowedOrigins[0];
+    
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    
+    console.log('OAuth callback - Request origin:', requestOrigin);
+    console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
     
     // Set secure HTTP-only cookie - no token in URL
     res.cookie("auth_token", token, {
