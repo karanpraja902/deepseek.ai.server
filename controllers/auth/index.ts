@@ -392,9 +392,9 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     
     // Set CORS headers explicitly - allow the requesting origin if it's in our allowed list
     const allowedOrigins = [
-      'http://localhost:3000',
       'https://deepseek-ai-web.vercel.app',
       'https://deepseek-ai-client.vercel.app',
+      'http://localhost:3000',
       process.env.CLIENT_URL
     ].filter(Boolean);
     
@@ -414,35 +414,72 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     console.log('OAuth callback - Request origin:', requestOrigin);
     console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
     
-    // Set secure HTTP-only cookie - no token in URL
-    res.cookie("auth_token", token, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true, // Required when sameSite is 'none'
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-      // Don't set domain for Vercel deployments - let browser handle it automatically
-      // domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-      path: '/' // Ensure cookie is available on all paths
-    });
+    // Determine if we're in production and get the correct domain
+    const isProduction = process.env.NODE_ENV === 'production';
+    const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
     
-    console.log("Cookie set with options:", {
+    // Enhanced cookie options for better cross-site compatibility
+    const cookieOptions: any = {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      domain: 'auto (browser-determined)'
-    });
+      secure: true, // Always secure for OAuth
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/'
+    };
+
+    // In production, use 'none' for cross-site, in development use 'lax'
+    if (isProduction) {
+      cookieOptions.sameSite = 'none';
+      // For production, try to extract domain from client URL for better cookie scope
+      try {
+        const clientDomain = new URL(clientUrl).hostname;
+        // For Vercel apps, set domain to the root domain if it's a subdomain
+        if (clientDomain.includes('.vercel.app')) {
+          cookieOptions.domain = '.vercel.app';
+        }
+      } catch (e) {
+        console.warn('Could not parse client URL for domain:', e);
+      }
+    } else {
+      cookieOptions.sameSite = 'lax';
+    }
     
+    // Set secure HTTP-only cookie
+    res.cookie("auth_token", token, cookieOptions);
+    
+    console.log("Cookie set with options:", cookieOptions);
     console.log("Response headers before redirect:", res.getHeaders());
     
     // Use 302 redirect for faster bounce and better Chrome compatibility
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    res.redirect(302, `${clientUrl}/auth/success`);
+    // Add a query parameter to help with debugging and include a temporary token for fallback
+    const tempToken = Buffer.from(token).toString('base64').slice(0, 16); // Short token for debugging
+    const redirectUrl = `${clientUrl}/auth/success?oauth=google&t=${Date.now()}&temp=${tempToken}`;
+    res.redirect(302, redirectUrl);
   } catch (error: any) {
     console.error('Google callback error:', error);
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    res.redirect(`${clientUrl}/sign-in?error=auth_failed`);
   }
 });
+
+// Debug endpoint to check cookie status
+export const debugCookies = (req: Request, res: Response): void => {
+  console.log("Debug cookies endpoint called");
+  console.log("All cookies:", req.cookies);
+  console.log("Headers:", req.headers);
+  
+  res.status(200).json({
+    success: true,
+    data: {
+      cookies: req.cookies,
+      hasAuthToken: !!req.cookies?.auth_token,
+      authTokenLength: req.cookies?.auth_token?.length || 0,
+      userAgent: req.get('User-Agent'),
+      origin: req.get('Origin'),
+      referer: req.get('Referer'),
+      timestamp: new Date().toISOString()
+    }
+  });
+};
 
 // User logout
 export const logout = (req: Request, res: Response): void => {
