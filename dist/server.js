@@ -33,17 +33,66 @@ const PORT = process.env.PORT || 5000;
 app.use((0, helmet_1.default)());
 app.use(cookieParser());
 // CORS configuration
+const allowedOrigins = [
+    'http://localhost:3000', // Local development
+    'https://deepseek-ai-web.vercel.app', // Production frontend
+    'https://deepseek-ai-client.vercel.app', // Alternative client URL
+    process.env.CLIENT_URL // Custom client URL from environment
+].filter(Boolean); // Remove any undefined values
+console.log('Allowed CORS origins:', allowedOrigins);
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin)
+            return callback(null, true);
+        // Check if origin is in allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        }
+        else if (process.env.NODE_ENV === 'development') {
+            // In development, allow any localhost origins
+            if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                callback(null, true);
+            }
+            else {
+                console.warn('CORS blocked origin:', origin);
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+        else {
+            // In production, also allow any vercel.app subdomain for your project
+            if (origin.includes('deepseek-ai') && origin.includes('vercel.app')) {
+                console.log('Allowing Vercel deployment origin:', origin);
+                callback(null, true);
+            }
+            else {
+                console.warn('CORS blocked origin:', origin);
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 app.use(passport_1.default.initialize());
-// Rate limiting
+// Rate limiting - more lenient for development
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 for dev, 100 for prod
+    message: {
+        error: 'Too many requests from this IP, please try again later.',
+        retryAfter: '15 minutes'
+    }
 });
-app.use('/api/', limiter);
+// Apply rate limiting to all API routes except auth (to prevent login/logout issues)
+app.use('/api/chat', limiter);
+app.use('/api/user', limiter);
+app.use('/api/pdf', limiter);
+app.use('/api/cloudinary', limiter);
+app.use('/api/ai', limiter);
+app.use('/api/weather', limiter);
+app.use('/api/stripe', limiter);
 // Body parsing middleware
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));

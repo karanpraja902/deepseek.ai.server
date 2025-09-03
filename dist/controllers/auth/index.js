@@ -337,16 +337,26 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
         console.log("User agent:", req.get('User-Agent'));
         const token = jsonwebtoken_1.default.sign({ userId: req.user.id, email: req.user.email }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: "30d" });
         console.log("google callback token", token);
-        // Set CORS headers explicitly
+        // Set CORS headers explicitly - allow the requesting origin if it's in our allowed list
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://deepseek-ai-web.vercel.app',
+            process.env.CLIENT_URL
+        ].filter(Boolean);
+        const requestOrigin = req.get('Origin') || req.get('Referer');
+        const allowedOrigin = allowedOrigins.find(origin => requestOrigin && requestOrigin.startsWith(origin)) || allowedOrigins[0];
         res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+        res.header('Access-Control-Allow-Origin', allowedOrigin);
+        console.log('OAuth callback - Request origin:', requestOrigin);
+        console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
         // Set secure HTTP-only cookie - no token in URL
         res.cookie("auth_token", token, {
             httpOnly: true,
             sameSite: "none",
             secure: true, // Required when sameSite is 'none'
             maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined // Set domain for production
+            domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined, // Set domain from env
+            path: '/' // Ensure cookie is available on all paths
         });
         console.log("Cookie set with options:", {
             httpOnly: true,
