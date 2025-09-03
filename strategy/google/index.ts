@@ -6,17 +6,25 @@ import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 console.log("google strategy");
+console.log("Environment variables:");
+console.log("- BACKEND_URL:", process.env.BACKEND_URL);
+console.log("- PORT:", process.env.PORT);
+console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "SET" : "NOT SET");
+console.log("- GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "SET" : "NOT SET");
+
+const callbackURL = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+console.log("Google OAuth callback URL:", callbackURL);
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-     callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`
-}, async (accessToken, refreshToken, profile, cb) => {
+    callbackURL: callbackURL
+}, async (_accessToken: string, _refreshToken: string, profile: any, cb: any) => {
     try {
         console.log('Google profile:', profile);
         
         let user = await User.findOne({ email: profile.emails![0].value });
         console.log({"user": user, "message": "Existing user found"});
-        
+        console.log("user callback", user);
         if (user) {
             // Update avatar if not set
             if (!user.avatar && profile.photos && profile.photos.length > 0) {
@@ -41,7 +49,7 @@ passport.use(new GoogleStrategy({
                 },
                 memory: {}
             });
-            
+            console.log("user212", user);
             await user.save();
             console.log('New Google user created:', user.email);
         }

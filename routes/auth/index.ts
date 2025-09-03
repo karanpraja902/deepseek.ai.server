@@ -32,7 +32,11 @@ router.get('/me', authMiddleware as any, getCurrentUser);
 
 // Google OAuth routes
 console.log("google route");
-router.get("/google", passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get("/google", passport.authenticate('google', { 
+  scope: ['profile', 'email'],
+  accessType: 'offline',
+  prompt: 'select_account consent'
+}));
 
 router.get('/google/callback', 
   passport.authenticate('google', { session: false, failureRedirect: '/sign-in' }),

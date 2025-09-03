@@ -7,7 +7,7 @@ exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authMiddleware = (req, res, next) => {
     // Try to get token from cookie first, then from Authorization header
-    console.log("auth middleware request", req);
+    // console.log("auth middleware request", req);
     console.log("auth middleware cookies", req.cookies);
     let token = req?.cookies?.auth_token;
     console.log("auth middleware token", token);
@@ -23,6 +23,7 @@ const authMiddleware = (req, res, next) => {
             success: false,
             error: "No token, authorization denied"
         });
+        console.log("No token, authorization denied");
         return;
     }
     console.log("auth middleware token", token);

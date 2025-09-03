@@ -119,6 +119,7 @@ export const getUserWithMemory = asyncHandler(async (req: Request, res: Response
 // User login
 export const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log("Login request");
     const { email, password } = req.body;
     
     if (!email || !password) {
@@ -154,18 +155,27 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
       userId: user.id,
       email: user.email
     };
+    console.log("login payload", payload);
     
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
+    console.log("login token", token);
     
+    // Set secure HTTP-only cookie
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true, // Required when sameSite is 'none'
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+    });
+
     const response: ApiResponse<any> = {
       success: true,
       message: 'Login successful',
       data: {
-        token,
         user: {
           id: user.id,
           email: user.email,
@@ -175,6 +185,7 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
         }
       }
     };
+    console.log("login response", response);
     
     res.status(200).json(response);
   } catch (error: any) {
@@ -238,6 +249,7 @@ export const updateUserMemory = asyncHandler(async (req: Request, res: Response)
 // User registration
 export const register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log("Register request");
     const { name, email, password } = req.body;
     
     if (!name || !email || !password) {
@@ -291,14 +303,14 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
     res.cookie("auth_token", token, {
       httpOnly: true,
       sameSite: "none",
-      secure: true,
+      secure: true, // Required when sameSite is 'none'
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
     });
 
     const response: ApiResponse<any> = {
       success: true,
       message: "User registered successfully",
       data: {
-        token,
         user: {
           id: user.id,
           name: user.name,
@@ -366,8 +378,11 @@ export const googleAuth = (req: Request, res: Response): void => {
 // Google OAuth callback
 export const googleCallback = asyncHandler(async (req: any, res: Response): Promise<void> => {
   try {
-    console.log("google callback request", req);
+    console.log("google callback request");
     console.log({"request": req.user.email});
+    console.log("Request headers:", req.headers);
+    console.log("User agent:", req.get('User-Agent'));
+    
     const token = jwt.sign(
       { userId: req.user.id, email: req.user.email },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -375,13 +390,32 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     );
     console.log("google callback token", token);
     
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+    
+    // Set secure HTTP-only cookie - no token in URL
     res.cookie("auth_token", token, {
       httpOnly: true,
       sameSite: "none",
-      secure: true,
+      secure: true, // Required when sameSite is 'none'
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+      domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined, // Set domain from env
+      path: '/' // Ensure cookie is available on all paths
     });
-
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?token=${token}`);
+    
+    console.log("Cookie set with options:", {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
+    });
+    
+    console.log("Response headers before redirect:", res.getHeaders());
+    
+    // Redirect to success page without token in URL
+    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/success`);
   } catch (error: any) {
     console.error('Google callback error:', error);
     res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
@@ -390,11 +424,25 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
 
 // User logout
 export const logout = (req: Request, res: Response): void => {
+  console.log("Logout called - clearing cookies");
+  console.log("Current cookies:", req.cookies);
+  
+  // Clear cookie with the same options used when setting it
   res.clearCookie("auth_token", {
     httpOnly: true,
     sameSite: 'none',
     secure: true
   });
+  
+  // Set cookie to expire immediately as an additional measure
+  res.cookie("auth_token", "", {
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
+    expires: new Date(0) // Expire immediately
+  });
+  
+  console.log("Cookies cleared successfully");
   
   res.status(200).json({ 
     success: true,

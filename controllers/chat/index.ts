@@ -13,7 +13,7 @@ import { ApiResponse, IMessage } from '../../types';
 export const createChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate request body
-    console.log("createChat controller", req.body);
+    console.log("createChat controller");
     const validation = validateCreateChatRequest(req.body);
     if (!validation.success) {
       res.status(400).json({
@@ -141,7 +141,7 @@ export const getUserChats = asyncHandler(async (req: Request, res: Response): Pr
 export const addMessage = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate request body
-    console.log("addMessage:", req.body);
+    console.log("addMessage:");
     const validation = validateAddMessageRequest(req.body);
     if (!validation.success) {
       res.status(400).json({
@@ -151,7 +151,7 @@ export const addMessage = asyncHandler(async (req: Request, res: Response): Prom
       });
       return;
     }
-    console.log("addMessage:", req.body);
+    console.log("addMessage:");
     
     const { id } = req.params;
     console.log("id:", id);
