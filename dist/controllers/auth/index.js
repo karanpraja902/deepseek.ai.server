@@ -341,6 +341,7 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
         const allowedOrigins = [
             'http://localhost:3000',
             'https://deepseek-ai-web.vercel.app',
+            'https://deepseek-ai-client.vercel.app',
             process.env.CLIENT_URL
         ].filter(Boolean);
         const requestOrigin = req.get('Origin') || req.get('Referer');
@@ -355,7 +356,8 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
             sameSite: "none",
             secure: true, // Required when sameSite is 'none'
             maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-            domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined, // Set domain from env
+            // Don't set domain for Vercel deployments - let browser handle it automatically
+            // domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
             path: '/' // Ensure cookie is available on all paths
         });
         console.log("Cookie set with options:", {
@@ -363,7 +365,7 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
             sameSite: "none",
             secure: true,
             maxAge: 30 * 24 * 60 * 60 * 1000,
-            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
+            domain: 'auto (browser-determined)'
         });
         console.log("Response headers before redirect:", res.getHeaders());
         // Redirect to success page without token in URL
