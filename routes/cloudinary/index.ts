@@ -10,6 +10,7 @@ import {
 const router = Router();
 
 // Upload file
+console.log("uploadFileBackend1");
 router.post('/upload', upload.single('file'), uploadFile);
 
 // Test Cloudinary configuration

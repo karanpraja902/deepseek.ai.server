@@ -9,7 +9,11 @@ export const createCheckoutSession = async (req: Request, res: Response): Promis
   try {
     console.log('Creating checkout session backend:');
     const { priceId, userId, planName, successUrl, cancelUrl } = req.body;
-
+    console.log("priceId", priceId);
+    console.log("userId", userId);
+    console.log("planName", planName);
+    console.log("successUrl", successUrl);
+    console.log("cancelUrl", cancelUrl); 
     if (!priceId || !userId) {
       res.status(400).json({
         error: 'Missing required parameters'

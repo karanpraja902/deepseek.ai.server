@@ -31,6 +31,7 @@ router.get('/models', getAvailableModelsHandler);
 // Web search endpoint for chat integration
 router.post('/web-search', async (req, res) => {
   try {
+    console.log("web-search req:");
     const { query, userQuestion } = req.body;
     
     if (!query || !userQuestion) {
