@@ -421,7 +421,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     
     // Determine if we're in production and get the correct domain
     const isProduction = process.env.NODE_ENV === 'production';
-    const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+    const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
     
     // Enhanced cookie options for better cross-site compatibility
     const cookieOptions: any = {
@@ -475,7 +475,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     res.status(200).json(response);
   } catch (error: any) {
     console.error('Google callback error:', error);
-    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
     res.redirect(`${clientUrl}/sign-in?error=auth_failed`);
   }
 });
