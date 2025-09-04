@@ -17,10 +17,10 @@ import {
 const router = Router();
 
 // Create new chat
-router.post('/', validateCreateChat, createChat);
+router.post('/create', validateCreateChat, createChat);
 
 // Get all chats for a user (must come before /:id route)
-router.get('/', getUserChats);
+router.get('/all', getUserChats);
 
 // Get chat by ID
 router.get('/:id', getChat);

@@ -6,8 +6,9 @@ import { ApiResponse, IUserPreferences } from '../../types';
 // Get user profile
 export const getUserProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('getUserProfile');
     const { userId } = req.params;
-    
+    console.log('userId', userId);
     const user = await User.findOne({ id: userId, isActive: true });
     
     if (!user) {
