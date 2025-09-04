@@ -45,7 +45,7 @@ router.get('/google/callback',
 );
 
 // Logout user
-router.post('/logout', logout);
+router.post('/logout',authMiddleware as any, logout);
 
 // Debug cookies endpoint
 router.get('/debug/cookies', debugCookies);
