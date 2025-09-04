@@ -190,6 +190,11 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
       }
     };
     console.log("login response", response);
+    console.log("login response token check:", {
+      hasToken: !!response.data.token,
+      tokenLength: response.data.token?.length,
+      tokenValue: response.data.token
+    });
     
     res.status(200).json(response);
   } catch (error: any) {
@@ -400,14 +405,22 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
       'https://deepseek-ai-web.vercel.app',
       'https://deepseek-ai-client.vercel.app',
       'http://localhost:3000',
-      'https://deepseek-ai-client.vercel.app', // Production client
       process.env.CLIENT_URL
     ].filter(Boolean);
     
     const requestOrigin = req.get('Origin') || req.get('Referer');
-    const allowedOrigin = allowedOrigins.find(origin => 
-      requestOrigin && requestOrigin.startsWith(origin)
-    ) || allowedOrigins[0];
+    console.log('All allowed origins:', allowedOrigins);
+    console.log('Request origin:', requestOrigin);
+    
+    // For Google OAuth, the origin is accounts.google.com, so use production client URL
+    let allowedOrigin;
+    if (requestOrigin && requestOrigin.includes('accounts.google.com')) {
+      allowedOrigin = process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000';
+    } else {
+      allowedOrigin = allowedOrigins.find(origin => 
+        requestOrigin && requestOrigin.startsWith(origin)
+      ) || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+    }
     
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Origin', allowedOrigin);
@@ -428,7 +441,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     const cookieOptions: any = {
       httpOnly: true,
       secure: true, // Always secure for OAuth
-      maxAge: 29* 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30* 24 * 60 * 60 * 1000, // 30 days
       path: '/'
     };
 
