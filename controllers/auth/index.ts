@@ -419,7 +419,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     } else {
       allowedOrigin = allowedOrigins.find(origin => 
         requestOrigin && requestOrigin.startsWith(origin)
-      ) || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+      ) || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
     }
     
     res.header('Access-Control-Allow-Credentials', 'true');
