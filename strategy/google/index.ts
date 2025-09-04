@@ -15,6 +15,7 @@ console.log("- GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "SET" 
 
 // Construct callback URL - point to frontend API route
 const frontendUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
+
 const callbackURL = `${frontendUrl}/api/auth/google`;
 
 console.log("Google OAuth callback URL:", callbackURL);
