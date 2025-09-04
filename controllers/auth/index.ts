@@ -167,14 +167,15 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     console.log("login token", token);
     
     // Set secure HTTP-only cookie
-    // res.cookie("auth_token", token, {
-    //   httpOnly: true,
-    //   sameSite: "none",
-    //   secure: true, // Required when sameSite is 'none'
-    //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-    // });
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true, // Required when sameSite is 'none'
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+    });
 
     const response: ApiResponse<any> = {
+      
       success: true,
       message: 'Login successful',
       data: {
@@ -449,7 +450,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     }
     
     // Set secure HTTP-only cookie
-    // res.cookie("auth_token", token, cookieOptions);
+    res.cookie("auth_token", token, cookieOptions);
     
     console.log("Cookie set with options:", cookieOptions);
     console.log("Response headers before redirect:", res.getHeaders());
