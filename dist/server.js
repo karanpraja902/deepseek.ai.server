@@ -35,6 +35,7 @@ app.use(cookieParser());
 // CORS configuration
 const allowedOrigins = [
     'http://localhost:3000', // Local development
+    'https://deepseek-ai-client.vercel.app', // Production client
     'https://deepseek-ai-web.vercel.app', // Production frontend
     'https://deepseek-ai-client.vercel.app', // Alternative client URL
     process.env.CLIENT_URL // Custom client URL from environment

@@ -28,6 +28,8 @@ router.get("/google", passport_1.default.authenticate('google', {
 router.get('/google/callback', passport_1.default.authenticate('google', { session: false, failureRedirect: '/sign-in' }), auth_1.googleCallback);
 // Logout user
 router.post('/logout', auth_1.logout);
+// Debug cookies endpoint
+router.get('/debug/cookies', auth_1.debugCookies);
 // Update user memory
 router.put('/user/:userId/memory', auth_1.updateUserMemory);
 exports.default = router;

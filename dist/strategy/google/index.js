@@ -16,10 +16,9 @@ console.log("- BACKEND_URL:", process.env.BACKEND_URL);
 console.log("- PORT:", process.env.PORT);
 console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "SET" : "NOT SET");
 console.log("- GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "SET" : "NOT SET");
-// Construct callback URL with proper protocol for production
-const backendUrl = process.env.BACKEND_URL ||
-    (process.env.NODE_ENV === 'production' ? 'https://your-production-domain.com' : 'http://localhost:5000');
-const callbackURL = `${backendUrl}/api/auth/google/callback`;
+// Construct callback URL - point to frontend API route
+const frontendUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+const callbackURL = `${frontendUrl}/api/auth/google`;
 console.log("Google OAuth callback URL:", callbackURL);
 // Validate environment variables
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {

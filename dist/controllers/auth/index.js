@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.googleCallback = exports.googleAuth = exports.getCurrentUser = exports.register = exports.updateUserMemory = exports.login = exports.getUserWithMemory = exports.initializeStaticUser = void 0;
+exports.logout = exports.debugCookies = exports.googleCallback = exports.googleAuth = exports.getCurrentUser = exports.register = exports.updateUserMemory = exports.login = exports.getUserWithMemory = exports.initializeStaticUser = void 0;
 const User_1 = __importDefault(require("../../models/User"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -111,7 +111,7 @@ exports.getUserWithMemory = (0, express_async_handler_1.default)(async (req, res
 // User login
 exports.login = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        console.log("Login request");
+        console.log("Login requestttt");
         const { email, password } = req.body;
         if (!email || !password) {
             res.status(400).json({
@@ -121,6 +121,7 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
             return;
         }
         const user = await User_1.default.findOne({ email, isActive: true });
+        console.log("user", user);
         if (!user) {
             res.status(401).json({
                 success: false,
@@ -145,16 +146,17 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
         const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
         console.log("login token", token);
         // Set secure HTTP-only cookie
-        res.cookie("auth_token", token, {
-            httpOnly: true,
-            sameSite: "none",
-            secure: true, // Required when sameSite is 'none'
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-        });
+        // res.cookie("auth_token", token, {
+        //   httpOnly: true,
+        //   sameSite: "none",
+        //   secure: true, // Required when sameSite is 'none'
+        //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+        // });
         const response = {
             success: true,
             message: 'Login successful',
             data: {
+                token: token,
                 user: {
                     id: user.id,
                     email: user.email,
@@ -268,6 +270,7 @@ exports.register = (0, express_async_handler_1.default)(async (req, res) => {
             success: true,
             message: "User registered successfully",
             data: {
+                token: token,
                 user: {
                     id: user.id,
                     name: user.name,
@@ -331,17 +334,18 @@ exports.googleAuth = googleAuth;
 // Google OAuth callback
 exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        console.log("google callback request");
-        console.log({ "request": req.user.email });
+        console.log("=== Google OAuth Callback ===");
+        console.log("User from Google:", req.user);
         console.log("Request headers:", req.headers);
         console.log("User agent:", req.get('User-Agent'));
         const token = jsonwebtoken_1.default.sign({ userId: req.user.id, email: req.user.email }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: "30d" });
         console.log("google callback token", token);
         // Set CORS headers explicitly - allow the requesting origin if it's in our allowed list
         const allowedOrigins = [
-            'http://localhost:3000',
             'https://deepseek-ai-web.vercel.app',
             'https://deepseek-ai-client.vercel.app',
+            'http://localhost:3000',
+            'https://deepseek-ai-client.vercel.app', // Production client
             process.env.CLIENT_URL
         ].filter(Boolean);
         const requestOrigin = req.get('Origin') || req.get('Referer');
@@ -354,33 +358,82 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
         res.header('Expires', '0');
         console.log('OAuth callback - Request origin:', requestOrigin);
         console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
-        // Set secure HTTP-only cookie - no token in URL
-        res.cookie("auth_token", token, {
+        // Determine if we're in production and get the correct domain
+        const isProduction = process.env.NODE_ENV === 'production';
+        const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+        // Enhanced cookie options for better cross-site compatibility
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: "none",
-            secure: true, // Required when sameSite is 'none'
-            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-            // Don't set domain for Vercel deployments - let browser handle it automatically
-            // domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-            path: '/' // Ensure cookie is available on all paths
-        });
-        console.log("Cookie set with options:", {
-            httpOnly: true,
-            sameSite: "none",
-            secure: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-            domain: 'auto (browser-determined)'
-        });
+            secure: true, // Always secure for OAuth
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+            path: '/'
+        };
+        // In production, use 'none' for cross-site, in development use 'lax'
+        if (isProduction) {
+            cookieOptions.sameSite = 'none';
+            // For production, try to extract domain from client URL for better cookie scope
+            try {
+                const clientDomain = new URL(clientUrl).hostname;
+                // For Vercel apps, set domain to the root domain if it's a subdomain
+                if (clientDomain.includes('.vercel.app')) {
+                    cookieOptions.domain = '.vercel.app';
+                }
+            }
+            catch (e) {
+                console.warn('Could not parse client URL for domain:', e);
+            }
+        }
+        else {
+            cookieOptions.sameSite = 'lax';
+        }
+        // Set secure HTTP-only cookie
+        // res.cookie("auth_token", token, cookieOptions);
+        console.log("Cookie set with options:", cookieOptions);
         console.log("Response headers before redirect:", res.getHeaders());
-        // Use 302 redirect for faster bounce and better Chrome compatibility
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-        res.redirect(302, `${clientUrl}/auth/success`);
+        // Return JSON response with token instead of redirecting
+        const response = {
+            success: true,
+            message: 'Google authentication successful',
+            data: {
+                token: token,
+                user: {
+                    id: req.user.id,
+                    email: req.user.email,
+                    name: req.user.name,
+                    username: req.user.username,
+                    avatar: req.user.avatar,
+                    preferences: req.user.preferences,
+                }
+            }
+        };
+        console.log("Sending Google auth response:", response);
+        res.status(200).json(response);
     }
     catch (error) {
         console.error('Google callback error:', error);
-        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/sign-in?error=auth_failed`);
+        const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+        res.redirect(`${clientUrl}/sign-in?error=auth_failed`);
     }
 });
+// Debug endpoint to check cookie status
+const debugCookies = (req, res) => {
+    console.log("Debug cookies endpoint called");
+    console.log("All cookies:", req.cookies);
+    console.log("Headers:", req.headers);
+    res.status(200).json({
+        success: true,
+        data: {
+            cookies: req.cookies,
+            hasAuthToken: !!req.cookies?.auth_token,
+            authTokenLength: req.cookies?.auth_token?.length || 0,
+            userAgent: req.get('User-Agent'),
+            origin: req.get('Origin'),
+            referer: req.get('Referer'),
+            timestamp: new Date().toISOString()
+        }
+    });
+};
+exports.debugCookies = debugCookies;
 // User logout
 const logout = (req, res) => {
     console.log("Logout called - clearing cookies");
