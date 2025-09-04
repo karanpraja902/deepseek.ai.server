@@ -428,7 +428,7 @@ export const googleCallback = asyncHandler(async (req: any, res: Response): Prom
     const cookieOptions: any = {
       httpOnly: true,
       secure: true, // Always secure for OAuth
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 29* 24 * 60 * 60 * 1000, // 30 days
       path: '/'
     };
 
