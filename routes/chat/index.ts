@@ -27,10 +27,10 @@ router.get('/', authMiddleware as any, getUserChats);
 
 
 // Add message to chat
-router.post('/:id/messages', authMiddleware as any, validateAddMessage, addMessage);
+router.post('/:id/messages', authMiddleware as any, addMessage);
 
 // Update chat title
-router.put('/:id/title', authMiddleware as any, validateUpdateChatTitle, updateChatTitle);
+router.put('/:id/title', authMiddleware as any,  updateChatTitle);
 
 // Delete chat
 router.delete('/:id', authMiddleware as any, deleteChat);

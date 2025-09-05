@@ -299,6 +299,7 @@ exports.deleteChat = (0, express_async_handler_1.default)(async (req, res) => {
 // Delete all chats for a user
 exports.deleteAllChats = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log("deleteAllChats controller");
         const userId = req.user?.userId;
         if (!userId) {
             res.status(401).json({
