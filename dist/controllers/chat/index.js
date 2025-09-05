@@ -22,8 +22,8 @@ exports.createChat = (0, express_async_handler_1.default)(async (req, res) => {
             return;
         }
         console.log("Creating chat for userId:", userId);
-        // Generate UUID for chat ID
-        const chatId = (0, uuid_1.v4)();
+        // Generate UUID and remove hyphens to match nanoid format
+        const chatId = (0, uuid_1.v4)().replace(/-/g, '');
         const newChat = new Chat_1.default({
             id: chatId,
             userId: userId,

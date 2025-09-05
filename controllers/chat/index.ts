@@ -27,8 +27,8 @@ export const createChat = asyncHandler(async (req: any, res: Response): Promise<
     
     console.log("Creating chat for userId:", userId);
     
-    // Generate UUID for chat ID
-    const chatId = uuidv4();
+    // Generate UUID and remove hyphens to match nanoid format
+    const chatId = uuidv4().replace(/-/g, '');
     
     const newChat = new Chat({
       id: chatId,
