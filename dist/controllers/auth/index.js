@@ -146,12 +146,12 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
         const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
         console.log("login token", token);
         // Set secure HTTP-only cookie
-        // res.cookie("auth_token", token, {
-        //   httpOnly: true,
-        //   sameSite: "none",
-        //   secure: true, // Required when sameSite is 'none'
-        //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-        // });
+        res.cookie("auth_token", token, {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+        });
         const response = {
             success: true,
             message: 'Login successful',
@@ -360,7 +360,7 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
         console.log('OAuth callback - Allowed origin set to:', allowedOrigin);
         // Determine if we're in production and get the correct domain
         const isProduction = process.env.NODE_ENV === 'production';
-        const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+        const clientUrl = process.env.CLIENT_URL || (isProduction ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
         // Enhanced cookie options for better cross-site compatibility
         const cookieOptions = {
             httpOnly: true,
@@ -411,7 +411,8 @@ exports.googleCallback = (0, express_async_handler_1.default)(async (req, res) =
     }
     catch (error) {
         console.error('Google callback error:', error);
-        const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-client.vercel.app' : 'http://localhost:3000');
+        // const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
+        const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://deepseek-ai-web.vercel.app' : 'http://localhost:3000');
         res.redirect(`${clientUrl}/sign-in?error=auth_failed`);
     }
 });

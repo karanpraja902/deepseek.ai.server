@@ -9,7 +9,9 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 // Get user profile
 exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log('getUserProfile');
         const { userId } = req.params;
+        console.log('userId', userId);
         const user = await User_1.default.findOne({ id: userId, isActive: true });
         if (!user) {
             res.status(404).json({

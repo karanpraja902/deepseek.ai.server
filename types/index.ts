@@ -83,7 +83,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export interface CreateChatRequest {
-  userId: string;
+  // Empty interface since userId comes from authentication
 }
 
 export interface AddMessageRequest {

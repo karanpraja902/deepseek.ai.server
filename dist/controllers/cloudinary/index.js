@@ -32,6 +32,12 @@ exports.upload = (0, multer_1.default)({
 // Upload file to Cloudinary
 exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log('Cloudinary configuration missing:', {
+            cloud_name: cloudinaryConfig.cloud_name ? 'set' : 'missing',
+            api_key: cloudinaryConfig.api_key ? 'set' : 'missing',
+            api_secret: cloudinaryConfig.api_secret ? 'set' : 'missing'
+        });
+        console.log("uploadFileBackend");
         // Check if Cloudinary is properly configured
         if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
             res.status(500).json({
@@ -66,10 +72,12 @@ exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
             width: result.width,
             height: result.height,
         };
+        console.log("cloudinary uploadResponse:", uploadResponse);
         const response = {
             success: true,
             data: { file: uploadResponse }
         };
+        console.log("cloudinary response:", response);
         res.status(200).json(response);
     }
     catch (error) {

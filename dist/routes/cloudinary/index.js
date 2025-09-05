@@ -4,6 +4,7 @@ const express_1 = require("express");
 const cloudinary_1 = require("../../controllers/cloudinary");
 const router = (0, express_1.Router)();
 // Upload file
+console.log("uploadFileBackend1");
 router.post('/upload', cloudinary_1.upload.single('file'), cloudinary_1.uploadFile);
 // Test Cloudinary configuration
 router.get('/config', cloudinary_1.testCloudinaryConfig);

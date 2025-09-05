@@ -37,10 +37,8 @@ const ChatSchema = zod_1.z.object({
     isActive: zod_1.z.boolean().optional().default(true),
 });
 exports.ChatSchema = ChatSchema;
-// Create chat request schema
-const CreateChatRequestSchema = zod_1.z.object({
-    userId: zod_1.z.string().min(1, "User ID is required"),
-});
+// Create chat request schema - now empty since userId comes from auth
+const CreateChatRequestSchema = zod_1.z.object({});
 exports.CreateChatRequestSchema = CreateChatRequestSchema;
 // Add message request schema
 const AddMessageRequestSchema = zod_1.z.object({

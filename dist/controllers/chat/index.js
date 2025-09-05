@@ -36,26 +36,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getChatMessages = exports.deleteChat = exports.updateChatTitle = exports.addMessage = exports.getUserChats = exports.getChat = exports.createChat = void 0;
+exports.getChatMessages = exports.deleteAllChats = exports.deleteChat = exports.updateChatTitle = exports.addMessage = exports.getUserChats = exports.getChat = exports.createChat = void 0;
 const Chat_1 = __importDefault(require("../../models/Chat"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const chatSchema_1 = require("../../schemas/chatSchema");
 // Create new chat
 exports.createChat = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        // Validate request body
+        // Get userId from authenticated user instead of request body
         console.log("createChat controller");
-        const validation = (0, chatSchema_1.validateCreateChatRequest)(req.body);
-        if (!validation.success) {
-            res.status(400).json({
+        const userId = req.user?.userId;
+        if (!userId) {
+            res.status(401).json({
                 success: false,
-                error: 'Invalid request format',
-                details: validation.error
+                error: 'User not authenticated'
             });
             return;
         }
-        console.log("validation:", validation);
-        const { userId } = validation.data;
+        console.log("Creating chat for userId:", userId);
         // Dynamic import for nanoid (ES module)
         const { nanoid } = await Promise.resolve().then(() => __importStar(require('nanoid')));
         const chatId = nanoid();
@@ -121,11 +119,11 @@ exports.getChat = (0, express_async_handler_1.default)(async (req, res) => {
 // Get all chats for a user
 exports.getUserChats = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        const { userId } = req.query;
-        if (!userId || typeof userId !== 'string') {
-            res.status(400).json({
+        const userId = req.user?.userId;
+        if (!userId) {
+            res.status(401).json({
                 success: false,
-                error: 'User ID required'
+                error: 'User not authenticated'
             });
             return;
         }
@@ -268,11 +266,19 @@ exports.updateChatTitle = (0, express_async_handler_1.default)(async (req, res) 
 exports.deleteChat = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { id } = req.params;
-        const chat = await Chat_1.default.findOneAndUpdate({ id, isActive: true }, { isActive: false }, { new: true });
+        const userId = req.user?.userId;
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                error: 'User not authenticated'
+            });
+            return;
+        }
+        const chat = await Chat_1.default.findOneAndUpdate({ id, userId, isActive: true }, { isActive: false }, { new: true });
         if (!chat) {
             res.status(404).json({
                 success: false,
-                error: 'Chat not found'
+                error: 'Chat not found or access denied'
             });
             return;
         }
@@ -287,6 +293,36 @@ exports.deleteChat = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to delete chat'
+        });
+    }
+});
+// Delete all chats for a user
+exports.deleteAllChats = (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                error: 'User not authenticated'
+            });
+            return;
+        }
+        // Soft delete all active chats for the user
+        const result = await Chat_1.default.updateMany({ userId, isActive: true }, { isActive: false, updatedAt: new Date() });
+        const response = {
+            success: true,
+            message: `Successfully deleted ${result.modifiedCount} chat(s)`,
+            data: {
+                deletedCount: result.modifiedCount
+            }
+        };
+        res.status(200).json(response);
+    }
+    catch (error) {
+        console.error('Delete all chats error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete all chats'
         });
     }
 });

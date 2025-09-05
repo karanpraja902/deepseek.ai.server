@@ -6,6 +6,7 @@ import {
   addMessage, 
   updateChatTitle, 
   deleteChat, 
+  deleteAllChats,
   getChatMessages 
 } from '../../controllers/chat';
 import { 
@@ -26,17 +27,22 @@ router.get('/', authMiddleware as any, getUserChats);
 
 
 // Add message to chat
-router.post('/:id/messages', validateAddMessage, addMessage);
+router.post('/:id/messages', authMiddleware as any, validateAddMessage, addMessage);
 
 // Update chat title
-router.put('/:id/title', validateUpdateChatTitle, updateChatTitle);
+router.put('/:id/title', authMiddleware as any, validateUpdateChatTitle, updateChatTitle);
 
 // Delete chat
-router.delete('/:id', deleteChat);
+router.delete('/:id', authMiddleware as any, deleteChat);
 
 // Get chat messages
-router.get('/:id/messages', getChatMessages);
+router.get('/:id/messages', authMiddleware as any, getChatMessages);
 
-router.get('/:id', getChat);
+// Get chat by ID
+router.get('/:id', authMiddleware as any, getChat);
+
+
+// Delete all chats for user (must come after /:id routes)
+router.delete('/', authMiddleware as any, deleteAllChats);
 
 export default router;

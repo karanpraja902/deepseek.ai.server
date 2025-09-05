@@ -97,14 +97,14 @@ export const getChat = asyncHandler(async (req: Request, res: Response): Promise
 });
 
 // Get all chats for a user
-export const getUserChats = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const getUserChats = asyncHandler(async (req: any, res: Response): Promise<void> => {
   try {
-    const { userId } = req.query;
+    const userId = req.user?.userId;
     
-    if (!userId || typeof userId !== 'string') {
-      res.status(400).json({ 
+    if (!userId) {
+      res.status(401).json({ 
         success: false,
-        error: 'User ID required' 
+        error: 'User not authenticated' 
       });
       return;
     }
@@ -265,12 +265,21 @@ export const updateChatTitle = asyncHandler(async (req: Request, res: Response):
 });
 
 // Delete chat
-export const deleteChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const deleteChat = asyncHandler(async (req: any, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ 
+        success: false,
+        error: 'User not authenticated' 
+      });
+      return;
+    }
     
     const chat = await Chat.findOneAndUpdate(
-      { id, isActive: true },
+      { id, userId, isActive: true },
       { isActive: false },
       { new: true }
     );
@@ -278,7 +287,7 @@ export const deleteChat = asyncHandler(async (req: Request, res: Response): Prom
     if (!chat) {
       res.status(404).json({ 
         success: false,
-        error: 'Chat not found' 
+        error: 'Chat not found or access denied' 
       });
       return;
     }
@@ -294,6 +303,44 @@ export const deleteChat = asyncHandler(async (req: Request, res: Response): Prom
     res.status(500).json({ 
       success: false,
       error: 'Failed to delete chat' 
+    });
+  }
+});
+
+// Delete all chats for a user
+export const deleteAllChats = asyncHandler(async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log("deleteAllChats controller");
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ 
+        success: false,
+        error: 'User not authenticated' 
+      });
+      return;
+    }
+    
+    // Soft delete all active chats for the user
+    const result = await Chat.updateMany(
+      { userId, isActive: true },
+      { isActive: false, updatedAt: new Date() }
+    );
+    
+    const response: ApiResponse<any> = {
+      success: true,
+      message: `Successfully deleted ${result.modifiedCount} chat(s)`,
+      data: {
+        deletedCount: result.modifiedCount
+      }
+    };
+    
+    res.status(200).json(response);
+  } catch (error: any) {
+    console.error('Delete all chats error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to delete all chats' 
     });
   }
 });
