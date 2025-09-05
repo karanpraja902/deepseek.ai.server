@@ -9,7 +9,6 @@ import {
   getChatMessages 
 } from '../../controllers/chat';
 import { 
-  validateCreateChat, 
   validateAddMessage, 
   validateUpdateChatTitle 
 } from '../../middleware/validation';
@@ -18,7 +17,7 @@ import { authMiddleware } from '../../middleware/auth';
 const router = Router();
 
 // Create new chat
-router.post('/', authMiddleware as any, validateCreateChat, createChat);
+router.post('/', authMiddleware as any, createChat);
 
 // Get all chats for a user (must come before /:id route)
 router.get('/', authMiddleware as any, getUserChats);
