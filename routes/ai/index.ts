@@ -11,6 +11,7 @@ import { analyzePDFWithLangChain, streamPDFAnalysis } from '../../controllers/pd
 const router = Router();
 
 // Stream chat with Google AI
+console.log("streamChat route")
 router.post('/chat/stream', streamChat);
 
 // Image generation endpoint

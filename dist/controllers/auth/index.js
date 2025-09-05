@@ -3,69 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.debugCookies = exports.googleCallback = exports.googleAuth = exports.getCurrentUser = exports.register = exports.updateUserMemory = exports.login = exports.getUserWithMemory = exports.initializeStaticUser = void 0;
+exports.logout = exports.debugCookies = exports.googleCallback = exports.googleAuth = exports.getCurrentUser = exports.register = exports.updateUserMemory = exports.login = exports.getUserWithMemory = void 0;
 const User_1 = __importDefault(require("../../models/User"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const uuid_1 = require("uuid");
-// Initialize static user
-exports.initializeStaticUser = (0, express_async_handler_1.default)(async (req, res) => {
-    try {
-        const staticUserId = 'static_user_karanao';
-        // Check if static user already exists
-        let staticUser = await User_1.default.findOne({ id: staticUserId });
-        console.log(staticUser);
-        if (!staticUser) {
-            // Create static user
-            const hashedPassword = await bcryptjs_1.default.hash('static_password', 10);
-            staticUser = new User_1.default({
-                id: staticUserId,
-                email: 'static@example.com',
-                username: 'static_user',
-                password: hashedPassword,
-                name: 'Static User',
-                preferences: {
-                    theme: 'light',
-                    language: 'en',
-                    aiModel: 'google',
-                    conversationStyle: 'casual',
-                    topics: ['technology', 'programming', 'ai']
-                },
-                memory: {
-                    preferences: {
-                        conversationStyle: 'casual',
-                        topics: ['technology', 'programming', 'ai']
-                    },
-                    recentConversations: [],
-                    learningProgress: {}
-                }
-            });
-            console.log(staticUser);
-            await staticUser.save();
-        }
-        const response = {
-            success: true,
-            message: 'Static user initialized successfully',
-            data: {
-                user: {
-                    id: staticUser.id,
-                    email: staticUser.email,
-                    username: staticUser.username,
-                    name: staticUser.name,
-                }
-            }
-        };
-        res.status(200).json(response);
-    }
-    catch (error) {
-        console.error('Init error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to initialize static user'
-        });
-    }
-});
 // Get user with memory
 exports.getUserWithMemory = (0, express_async_handler_1.default)(async (req, res) => {
     try {

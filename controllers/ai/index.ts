@@ -244,7 +244,7 @@ setInterval(logMemoryUsage, 15 * 60 * 1000);
 export const streamChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
   try {
-  
+  console.log("streamChat req.body:")
     const { messages, userId, model: requestedModel } = req.body;
 
     

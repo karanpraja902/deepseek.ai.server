@@ -25,7 +25,7 @@ router.get('/', authMiddleware as any, getUserChats);
 
 // Get chat by ID
 
-
+console.log("addMessage route")
 // Add message to chat
 router.post('/:id/messages', authMiddleware as any, addMessage);
 
