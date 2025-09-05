@@ -10,21 +10,21 @@ import {
 import { ApiResponse, IMessage } from '../../types';
 
 // Create new chat
-export const createChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const createChat = asyncHandler(async (req: any, res: Response): Promise<void> => {
   try {
-    // Validate request body
+    // Get userId from authenticated user instead of request body
     console.log("createChat controller");
-    const validation = validateCreateChatRequest(req.body);
-    if (!validation.success) {
-      res.status(400).json({
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({
         success: false,
-        error: 'Invalid request format',
-        details: validation.error
+        error: 'User not authenticated'
       });
       return;
     }
-    console.log("validation:", validation);
-    const { userId } = validation.data!;
+    
+    console.log("Creating chat for userId:", userId);
     
     // Dynamic import for nanoid (ES module)
     const { nanoid } = await import('nanoid');

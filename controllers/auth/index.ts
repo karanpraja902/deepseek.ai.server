@@ -167,12 +167,12 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
     console.log("login token", token);
     
     // Set secure HTTP-only cookie
-    // res.cookie("auth_token", token, {
-    //   httpOnly: true,
-    //   sameSite: "none",
-    //   secure: true, // Required when sameSite is 'none'
-    //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-    // });
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+    });
 
     const response: ApiResponse<any> = {
       success: true,

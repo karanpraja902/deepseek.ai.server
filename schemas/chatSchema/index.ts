@@ -38,10 +38,8 @@ const ChatSchema = z.object({
   isActive: z.boolean().optional().default(true),
 });
 
-// Create chat request schema
-const CreateChatRequestSchema = z.object({
-  userId: z.string().min(1, "User ID is required"),
-});
+// Create chat request schema - now empty since userId comes from auth
+const CreateChatRequestSchema = z.object({});
 
 // Add message request schema
 const AddMessageRequestSchema = z.object({

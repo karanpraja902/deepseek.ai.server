@@ -13,17 +13,18 @@ import {
   validateAddMessage, 
   validateUpdateChatTitle 
 } from '../../middleware/validation';
+import { authMiddleware } from '../../middleware/auth';
 
 const router = Router();
 
 // Create new chat
-router.post('/', validateCreateChat, createChat);
+router.post('/', authMiddleware as any, validateCreateChat, createChat);
 
 // Get all chats for a user (must come before /:id route)
-router.get('/', getUserChats);
+router.get('/', authMiddleware as any, getUserChats);
 
 // Get chat by ID
-router.get('/:id', getChat);
+
 
 // Add message to chat
 router.post('/:id/messages', validateAddMessage, addMessage);
@@ -36,5 +37,7 @@ router.delete('/:id', deleteChat);
 
 // Get chat messages
 router.get('/:id/messages', getChatMessages);
+
+router.get('/:id', getChat);
 
 export default router;
