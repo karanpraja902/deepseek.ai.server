@@ -270,18 +270,20 @@ export const streamPDFAnalysis = asyncHandler(async (req: Request, res: Response
     const response = await axios.get(pdfUrl, {
       responseType: 'arraybuffer'
     });
-
+    console.log("response:", response)
     // Save PDF temporarily
     // Use system temp directory instead of project directory for serverless compatibility
     const tempDir = os.tmpdir();
+    console.log("tempDir:", tempDir)
     const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+    console.log("tempFilePath:", tempFilePath)
     fs.writeFileSync(tempFilePath, response.data);
-
+    console.log("fs.writeFileSync(tempFilePath, response.data);")
     try {
       // Load PDF using LangChain
       const loader = new PDFLoader(tempFilePath);
       const pdfDocs = await loader.load();
-      
+      console.log("pdfDocs:", pdfDocs)
       // Split documents into chunks
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
@@ -298,7 +300,7 @@ export const streamPDFAnalysis = asyncHandler(async (req: Request, res: Response
           apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
         })
       );
-
+      console.log("vectorStore:", vectorStore)
       // Initialize LangChain components for streaming
       const llm = new ChatGoogleGenerativeAI({
         model: 'gemini-2.0-flash-exp',
@@ -306,11 +308,11 @@ export const streamPDFAnalysis = asyncHandler(async (req: Request, res: Response
         temperature: 0.3,
         streaming: true,
       });
-
+      console.log("llm:", llm)
       const embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       });
-
+      console.log("embeddings:", embeddings)
       // Create question answering prompt for streaming
       const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
         [
@@ -327,29 +329,29 @@ Context: {context}`
         ],
         ['human', '{input}'],
       ]);
-
+      console.log("questionAnsweringPrompt:", questionAnsweringPrompt)
       // Create document chain
       const combineDocsChain = await createStuffDocumentsChain({
         llm,
         prompt: questionAnsweringPrompt,
       });
-
+      console.log("combineDocsChain:", combineDocsChain)
       // Create retrieval chain
       const chain = await createRetrievalChain({
         retriever: vectorStore.asRetriever({ k: 5 }),
         combineDocsChain,
       });
-
+      console.log("chain:", chain)
       // Execute the analysis with streaming
       const query = question || 'Provide a comprehensive analysis of this document';
       
       const result = await chain.invoke({
         input: query,
       });
-
+      console.log("result:", result)
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
-
+      console.log("fs.unlinkSync(tempFilePath);")
       // Stream the response
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
