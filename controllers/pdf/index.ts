@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import axios from 'axios';
 
 // LangChain imports
@@ -32,20 +33,18 @@ export const analyzePDFWithLangChain = asyncHandler(async (req: Request, res: Re
     console.log(`Analysis Type: ${analysisType}`);
 
     // Download PDF with streaming to avoid memory overload
-    const tempDir = path.join(__dirname, '../../temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
+    // Use system temp directory instead of project directory for serverless compatibility
+    const tempDir = os.tmpdir();
+    console.log("tempDir:", tempDir)
     const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
-    
+    console.log("tempFilePath:", tempFilePath)
     // Stream download to file instead of loading into memory
     const response = await axios.get(pdfUrl, {
       responseType: 'stream',
       maxContentLength: 50 * 1024 * 1024, // 50MB limit
       timeout: 30000 // 30 second timeout
     });
-    
+    console.log("response:", response)
     const writer = fs.createWriteStream(tempFilePath);
     response.data.pipe(writer);
     
@@ -55,12 +54,13 @@ export const analyzePDFWithLangChain = asyncHandler(async (req: Request, res: Re
       writer.on('error', reject);
       response.data.on('error', reject);
     });
+    console.log("response.data:", response.data)
 
     try {
       // Load PDF using LangChain
       const loader = new PDFLoader(tempFilePath);
       const pdfDocs = await loader.load();
-      
+      console.log("pdfDocs:", pdfDocs)
       console.log(`Loaded ${pdfDocs.length} pages from PDF`);
 
       // Limit text processing to prevent memory overload
@@ -272,11 +272,8 @@ export const streamPDFAnalysis = asyncHandler(async (req: Request, res: Response
     });
 
     // Save PDF temporarily
-    const tempDir = path.join(__dirname, '../../temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
+    // Use system temp directory instead of project directory for serverless compatibility
+    const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
     fs.writeFileSync(tempFilePath, response.data);
 

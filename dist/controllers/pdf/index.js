@@ -40,6 +40,7 @@ exports.streamPDFAnalysis = exports.analyzePDFWithLangChain = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const axios_1 = __importDefault(require("axios"));
 // LangChain imports
 const google_genai_1 = require("@langchain/google-genai");
@@ -65,17 +66,18 @@ exports.analyzePDFWithLangChain = (0, express_async_handler_1.default)(async (re
         console.log(`Question: ${question}`);
         console.log(`Analysis Type: ${analysisType}`);
         // Download PDF with streaming to avoid memory overload
-        const tempDir = path.join(__dirname, '../../temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
+        // Use system temp directory instead of project directory for serverless compatibility
+        const tempDir = os.tmpdir();
+        console.log("tempDir:", tempDir);
         const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+        console.log("tempFilePath:", tempFilePath);
         // Stream download to file instead of loading into memory
         const response = await axios_1.default.get(pdfUrl, {
             responseType: 'stream',
             maxContentLength: 50 * 1024 * 1024, // 50MB limit
             timeout: 30000 // 30 second timeout
         });
+        console.log("response:", response);
         const writer = fs.createWriteStream(tempFilePath);
         response.data.pipe(writer);
         // Wait for download to complete
@@ -84,10 +86,12 @@ exports.analyzePDFWithLangChain = (0, express_async_handler_1.default)(async (re
             writer.on('error', reject);
             response.data.on('error', reject);
         });
+        console.log("response.data:", response.data);
         try {
             // Load PDF using LangChain
             const loader = new pdf_1.PDFLoader(tempFilePath);
             const pdfDocs = await loader.load();
+            console.log("pdfDocs:", pdfDocs);
             console.log(`Loaded ${pdfDocs.length} pages from PDF`);
             // Limit text processing to prevent memory overload
             const maxTextLength = 100000; // 100KB text limit
@@ -263,10 +267,8 @@ exports.streamPDFAnalysis = (0, express_async_handler_1.default)(async (req, res
             responseType: 'arraybuffer'
         });
         // Save PDF temporarily
-        const tempDir = path.join(__dirname, '../../temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
+        // Use system temp directory instead of project directory for serverless compatibility
+        const tempDir = os.tmpdir();
         const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
         fs.writeFileSync(tempFilePath, response.data);
         try {

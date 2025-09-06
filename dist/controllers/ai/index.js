@@ -191,11 +191,7 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
             });
             return;
         }
-        console.log("messagesss:", messages[messages.length - 1].parts);
-        console.log("userId1:", userId);
-        // Optimized message transformation for multimodal content with fast-path processing
-        let transformedMessages = messages
-            .map((msg) => {
+        let transformedMessages = await Promise.all(messages.map(async (msg) => {
             // Handle tool messages properly
             if (msg.role === 'tool') {
                 return {
@@ -244,8 +240,9 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 role: msg.role,
                 content
             } : null;
-        })
-            .filter((msg) => msg !== null);
+        }));
+        // Filter out null values
+        transformedMessages = transformedMessages.filter(msg => msg !== null && msg !== undefined);
         // Parallel memory retrieval that doesn't block main processing
         let memoryContext = '';
         let memoryPromise = null;
@@ -278,11 +275,7 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         else {
             console.log('Skipping Mem0 - userId:', !!userId, 'MEM0_API_KEY:', !!process.env.MEM0_API_KEY);
         }
-        // Continue with message processing while memory loads in background
-        // We'll incorporate memory results later if available
-        // Quickly try to get memory context with timeout, fallback to processing without it
         let messagesWithMemory = transformedMessages;
-        console.log("transformedMessages.length:", transformedMessages.length);
         if (memoryPromise && transformedMessages.length > 0) {
             try {
                 // Try to get memory context quickly (max 800ms)
@@ -312,60 +305,23 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 console.log('Proceeding without memory context');
             }
         }
-        // Convert messages to the correct format for AI SDK
-        const convertedMessages = messagesWithMemory.map(msg => {
-            if (msg.role === 'system') {
-                return {
-                    role: 'system',
-                    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-                };
-            }
-            else if (msg.role === 'user') {
-                return {
-                    role: 'user',
-                    content: typeof msg.content === 'string' ? msg.content :
-                        Array.isArray(msg.content) ? msg.content.map((part) => typeof part === 'string' ? part :
-                            part.type === 'text' ? part.text :
-                                part.type === 'image' ? part.image :
-                                    JSON.stringify(part)).join(' ') : JSON.stringify(msg.content)
-                };
-            }
-            else if (msg.role === 'assistant') {
-                return {
-                    role: 'assistant',
-                    content: typeof msg.content === 'string' ? msg.content :
-                        Array.isArray(msg.content) ? msg.content.map((part) => typeof part === 'string' ? part :
-                            part.type === 'text' ? part.text :
-                                JSON.stringify(part)).join(' ') : JSON.stringify(msg.content)
-                };
-            }
-            else if (msg.role === 'tool') {
-                return {
-                    role: 'tool',
-                    content: msg.content,
-                    toolCallId: msg.toolCallId,
-                    toolName: msg.toolName
-                };
-            }
-            return msg;
-        });
-        console.log("convertedMessages:", convertedMessages.length);
+        // console.log("convertedMessages:", convertedMessages.length);
         // Determine which model to use
         console.log("requestedModel:", requestedModel);
         const modelKey = requestedModel && (0, modelProvider_1.isValidModel)(requestedModel) ? requestedModel : modelProvider_1.DEFAULT_MODEL;
         console.log(`Using model: ${modelKey} (${modelProvider_1.AVAILABLE_MODELS[modelKey]?.displayName})`);
         console.log("modelKey:", modelKey);
         // Manage context length to prevent token limit errors
-        const managedMessages = await (0, contextManager_1.manageContext)(convertedMessages, modelKey);
+        const managedMessages = await (0, contextManager_1.manageContext)(transformedMessages, modelKey);
         // Log context management results
-        const originalTokens = (0, contextManager_1.calculateMessageTokens)(convertedMessages);
+        const originalTokens = (0, contextManager_1.calculateMessageTokens)(transformedMessages);
         const managedTokens = (0, contextManager_1.calculateMessageTokens)(managedMessages);
         const tokenLimit = (0, contextManager_1.getTokenLimit)(modelKey);
-        console.log(`📊 Context Management:
-      Original: ${convertedMessages.length} messages (${originalTokens} tokens)
-      Managed: ${managedMessages.length} messages (${managedTokens} tokens)
-      Limit: ${tokenLimit} tokens
-      Model: ${modelKey}`);
+        // console.log(`📊 Context Management:
+        //   Original: ${convertedMessages.length} messages (${originalTokens} tokens)
+        //   Managed: ${managedMessages.length} messages (${managedTokens} tokens)
+        //   Limit: ${tokenLimit} tokens
+        //   Model: ${modelKey}`);
         // Validate final context
         const validation = (0, contextManager_1.validateContext)(managedMessages, modelKey);
         if (!validation.valid) {
@@ -398,6 +354,7 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
         // console.log("managedMessages:", managedMessages)
         // Optimized context management: preserve conversation flow while respecting token limits
         const optimizedMessages = managedMessages; // Use the properly managed context from manageContext()
+        // console.log("optimizedMessages:", optimizedMessages)
         // Wrap the model call in try-catch to catch OpenRouter errors before streaming
         let result;
         try {
@@ -405,7 +362,7 @@ exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
                 modelKey,
                 tools,
                 providerOptions,
-                messages: optimizedMessages,
+                messages: transformedMessages,
                 temperature: 0.4,
             });
         }

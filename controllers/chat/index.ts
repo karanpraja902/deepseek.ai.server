@@ -193,7 +193,7 @@ export const addMessage = asyncHandler(async (req: Request, res: Response): Prom
     }
     
     await chat.save();
-    console.log("chat saved:", chat);
+    // console.log("chat saved:", chat);
     
     const response: ApiResponse<any> = {
       success: true,

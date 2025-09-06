@@ -169,7 +169,7 @@ exports.addMessage = (0, express_async_handler_1.default)(async (req, res) => {
             chat.title = words.length > 20 ? words.substring(0, 20) + '...' : words;
         }
         await chat.save();
-        console.log("chat saved:", chat);
+        // console.log("chat saved:", chat);
         const response = {
             success: true,
             message: 'Message added successfully',

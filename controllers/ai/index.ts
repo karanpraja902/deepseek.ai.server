@@ -256,12 +256,8 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
       return;
     }
 
-    console.log("messagesss:",messages[messages.length-1].parts)
-    console.log("userId1:", userId)
-
-    // Optimized message transformation for multimodal content with fast-path processing
-    let transformedMessages = messages
-      .map((msg) => {
+    let transformedMessages: any[] = await Promise.all(
+      messages.map(async (msg) => {
         // Handle tool messages properly
         if (msg.role === 'tool') {
           return {
@@ -316,7 +312,10 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
           content
         } : null;
       })
-      .filter((msg): msg is any => msg !== null);
+    );
+    
+    // Filter out null values
+    transformedMessages = transformedMessages.filter(msg => msg !== null && msg !== undefined);
      
     // Parallel memory retrieval that doesn't block main processing
     let memoryContext = '';
@@ -354,14 +353,9 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
     } else {
       console.log('Skipping Mem0 - userId:', !!userId, 'MEM0_API_KEY:', !!process.env.MEM0_API_KEY);
     }
-    
-    // Continue with message processing while memory loads in background
-    // We'll incorporate memory results later if available
-        
-    // Quickly try to get memory context with timeout, fallback to processing without it
+
     let messagesWithMemory = transformedMessages;
-    console.log("transformedMessages.length:", transformedMessages.length)
-    
+
     if (memoryPromise && transformedMessages.length > 0) {
       try {
         // Try to get memory context quickly (max 800ms)
@@ -393,46 +387,9 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
       }
     }
     
-    // Convert messages to the correct format for AI SDK
-    const convertedMessages = messagesWithMemory.map(msg => {
-      if (msg.role === 'system') {
-        return {
-          role: 'system' as const,
-          content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-        };
-      } else if (msg.role === 'user') {
-        return {
-          role: 'user' as const,
-          content: typeof msg.content === 'string' ? msg.content : 
-            Array.isArray(msg.content) ? msg.content.map((part: any) => 
-              typeof part === 'string' ? part : 
-              part.type === 'text' ? part.text : 
-              part.type === 'image' ? part.image : 
-              JSON.stringify(part)
-            ).join(' ') : JSON.stringify(msg.content)
-        };
-      } else if (msg.role === 'assistant') {
-        return {
-          role: 'assistant' as const,
-          content: typeof msg.content === 'string' ? msg.content : 
-            Array.isArray(msg.content) ? msg.content.map((part: any) => 
-              typeof part === 'string' ? part : 
-              part.type === 'text' ? part.text : 
-              JSON.stringify(part)
-            ).join(' ') : JSON.stringify(msg.content)
-        };
-      } else if (msg.role === 'tool') {
-        return {
-          role: 'tool' as const,
-          content: msg.content,
-          toolCallId: msg.toolCallId,
-          toolName: msg.toolName
-        };
-      }
-      return msg;
-    });
+  
  
-    console.log("convertedMessages:", convertedMessages.length);
+    // console.log("convertedMessages:", convertedMessages.length);
     
     // Determine which model to use
     console.log("requestedModel:", requestedModel)
@@ -441,18 +398,18 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
     console.log("modelKey:", modelKey)
     
     // Manage context length to prevent token limit errors
-    const managedMessages = await manageContext(convertedMessages, modelKey);
+    const managedMessages = await manageContext(transformedMessages, modelKey);
     
     // Log context management results
-    const originalTokens = calculateMessageTokens(convertedMessages);
+    const originalTokens = calculateMessageTokens(transformedMessages);
     const managedTokens = calculateMessageTokens(managedMessages);
     const tokenLimit = getTokenLimit(modelKey);
     
-    console.log(`📊 Context Management:
-      Original: ${convertedMessages.length} messages (${originalTokens} tokens)
-      Managed: ${managedMessages.length} messages (${managedTokens} tokens)
-      Limit: ${tokenLimit} tokens
-      Model: ${modelKey}`);
+    // console.log(`📊 Context Management:
+    //   Original: ${convertedMessages.length} messages (${originalTokens} tokens)
+    //   Managed: ${managedMessages.length} messages (${managedTokens} tokens)
+    //   Limit: ${tokenLimit} tokens
+    //   Model: ${modelKey}`);
     
     // Validate final context
     const validation = validateContext(managedMessages, modelKey);
@@ -483,13 +440,14 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
         thinkingConfig: {
           includeThoughts: true,
         },
+        
       } satisfies GoogleGenerativeAIProviderOptions,
     } : {};
     // console.log("managedMessages:", managedMessages)
     
     // Optimized context management: preserve conversation flow while respecting token limits
     const optimizedMessages = managedMessages; // Use the properly managed context from manageContext()
-
+// console.log("optimizedMessages:", optimizedMessages)
     // Wrap the model call in try-catch to catch OpenRouter errors before streaming
     let result;
     try {
@@ -497,7 +455,7 @@ export const streamChat = asyncHandler(async (req: Request, res: Response): Prom
         modelKey,
         tools,
         providerOptions,
-        messages: optimizedMessages,
+        messages: transformedMessages,
         temperature: 0.4,
       });
     } catch (modelError: any) {
