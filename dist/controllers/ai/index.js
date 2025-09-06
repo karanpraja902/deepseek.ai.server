@@ -182,6 +182,7 @@ setInterval(cleanupExpiredCache, 10 * 60 * 1000);
 setInterval(logMemoryUsage, 15 * 60 * 1000);
 exports.streamChat = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        console.log("streamChat req.body:");
         const { messages, userId, model: requestedModel } = req.body;
         if (!messages || !Array.isArray(messages)) {
             res.status(400).json({

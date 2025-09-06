@@ -5,6 +5,7 @@ const ai_1 = require("../../controllers/ai");
 const search_1 = require("../../controllers/search");
 const router = (0, express_1.Router)();
 // Stream chat with Google AI
+console.log("streamChat route");
 router.post('/chat/stream', ai_1.streamChat);
 // Image generation endpoint
 router.post('/generate-image', ai_1.generateImageHandler);

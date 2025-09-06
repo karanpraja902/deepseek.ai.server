@@ -8,6 +8,8 @@ const passport_1 = __importDefault(require("passport"));
 const auth_1 = require("../../controllers/auth");
 const auth_2 = require("../../middleware/auth");
 const router = express_1.default.Router();
+// Initialize static user
+router.post('/init', auth_1.initializeStaticUser);
 // Get user with memory
 router.get('/user', auth_1.getUserWithMemory);
 // Login user

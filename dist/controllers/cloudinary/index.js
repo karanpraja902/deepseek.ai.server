@@ -32,6 +32,11 @@ exports.upload = (0, multer_1.default)({
 // Upload file to Cloudinary
 exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+        res.header('Access-Control-Allow-Credentials', 'true');
         console.log('Cloudinary configuration missing:', {
             cloud_name: cloudinaryConfig.cloud_name ? 'set' : 'missing',
             api_key: cloudinaryConfig.api_key ? 'set' : 'missing',
@@ -101,6 +106,11 @@ exports.uploadFile = (0, express_async_handler_1.default)(async (req, res) => {
 // Delete file from Cloudinary
 exports.deleteFile = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+        res.header('Access-Control-Allow-Credentials', 'true');
         const { publicId } = req.params;
         if (!publicId) {
             res.status(400).json({
@@ -135,6 +145,11 @@ exports.deleteFile = (0, express_async_handler_1.default)(async (req, res) => {
 // Test Cloudinary configuration
 exports.testCloudinaryConfig = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+        res.header('Access-Control-Allow-Credentials', 'true');
         const config = {
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'missing',
             api_key: process.env.CLOUDINARY_API_KEY ? 'set' : 'missing',
@@ -157,6 +172,11 @@ exports.testCloudinaryConfig = (0, express_async_handler_1.default)(async (req, 
 // Get file info
 exports.getFileInfo = (0, express_async_handler_1.default)(async (req, res) => {
     try {
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+        res.header('Access-Control-Allow-Credentials', 'true');
         const { publicId } = req.params;
         if (!publicId) {
             res.status(400).json({

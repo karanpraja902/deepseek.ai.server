@@ -9,6 +9,7 @@ router.post('/', auth_1.authMiddleware, chat_1.createChat);
 // Get all chats for a user (must come before /:id route)
 router.get('/', auth_1.authMiddleware, chat_1.getUserChats);
 // Get chat by ID
+console.log("addMessage route");
 // Add message to chat
 router.post('/:id/messages', auth_1.authMiddleware, chat_1.addMessage);
 // Update chat title

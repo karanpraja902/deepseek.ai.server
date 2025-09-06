@@ -48,11 +48,13 @@ app.use((0, cors_1.default)({
             return callback(null, true);
         // Check if origin is in allowed list
         if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log('CORS allowing origin from allowed list:', origin);
             callback(null, true);
         }
         else if (process.env.NODE_ENV === 'development') {
             // In development, allow any localhost origins
             if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                console.log('CORS allowing localhost origin:', origin);
                 callback(null, true);
             }
             else {
@@ -63,7 +65,12 @@ app.use((0, cors_1.default)({
         else {
             // In production, also allow any vercel.app subdomain for your project
             if (origin.includes('deepseek-ai') && origin.includes('vercel.app')) {
-                console.log('Allowing Vercel deployment origin:', origin);
+                console.log('CORS allowing Vercel deployment origin:', origin);
+                callback(null, true);
+            }
+            else if (origin.includes('vercel.app')) {
+                // Allow any vercel.app subdomain as fallback
+                console.log('CORS allowing Vercel origin:', origin);
                 callback(null, true);
             }
             else {
@@ -74,7 +81,8 @@ app.use((0, cors_1.default)({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 app.use(passport_1.default.initialize());
 // Rate limiting - more lenient for development
