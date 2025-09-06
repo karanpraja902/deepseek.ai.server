@@ -14,7 +14,7 @@ export interface ModelConfig {
 // Model key mapping for OpenRouter full model names
 const MODEL_KEY_MAPPING: Record<string, string> = {
   'openrouter:deepseek/deepseek-r1-0528:free': 'deepseek-r1',
-  'openrouter:nvidia/llama-3.1-nemotron-ultra-253b-v1:free': 'llama-3.1',
+  'meta-llama/llama-4-maverick:free': 'llama-4-maverick',
   'openrouter:openai/gpt-oss-20b:free': 'gpt-oss-20b'
 };
 
@@ -33,16 +33,16 @@ export const AVAILABLE_MODELS: Record<string, ModelConfig> = {
     displayName: 'DeepSeek R1',
     apiKeyEnv: 'DEEPSEEK_R1_API_KEY'
   },
-  'llama-3.1': {
+  'llama-4-maverick': {
     provider: 'openrouter',
-    model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1:free',
-    displayName: 'Llama 3.1 Nemotron',
+    model: 'meta-llama/llama-4-maverick:free',
+    displayName: 'Llama 4 Maverick',
     apiKeyEnv: 'LLAMA_31_API_KEY'
   },
   'gpt-oss-20b': {
     provider: 'openrouter',
     model: 'openai/gpt-oss-20b:free',
-    displayName: 'OpenAI:gpt-oss',
+    displayName: 'OpenAI:GPT-OSS-20B',
     apiKeyEnv: 'GPT_OSS_API_KEY'
   },
   'gemma-3n-e2b-it:free': {

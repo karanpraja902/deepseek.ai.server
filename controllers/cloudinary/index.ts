@@ -42,6 +42,12 @@ interface MulterRequest extends Request {
 // Upload file to Cloudinary
 export const uploadFile = asyncHandler(async (req: MulterRequest, res: Response): Promise<void> => {
   try {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     console.log('Cloudinary configuration missing:', {
       cloud_name: cloudinaryConfig.cloud_name ? 'set' : 'missing',
       api_key: cloudinaryConfig.api_key ? 'set' : 'missing',
@@ -118,6 +124,12 @@ export const uploadFile = asyncHandler(async (req: MulterRequest, res: Response)
 // Delete file from Cloudinary
 export const deleteFile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     const { publicId } = req.params;
     
     if (!publicId) {
@@ -154,6 +166,12 @@ export const deleteFile = asyncHandler(async (req: Request, res: Response): Prom
 // Test Cloudinary configuration
 export const testCloudinaryConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     const config = {
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'missing',
       api_key: process.env.CLOUDINARY_API_KEY ? 'set' : 'missing',
@@ -177,6 +195,12 @@ export const testCloudinaryConfig = asyncHandler(async (req: Request, res: Respo
 // Get file info
 export const getFileInfo = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     const { publicId } = req.params;
     
     if (!publicId) {
