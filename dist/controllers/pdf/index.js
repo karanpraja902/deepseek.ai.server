@@ -266,15 +266,20 @@ exports.streamPDFAnalysis = (0, express_async_handler_1.default)(async (req, res
         const response = await axios_1.default.get(pdfUrl, {
             responseType: 'arraybuffer'
         });
+        console.log("response:", response);
         // Save PDF temporarily
         // Use system temp directory instead of project directory for serverless compatibility
         const tempDir = os.tmpdir();
+        console.log("tempDir:", tempDir);
         const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+        console.log("tempFilePath:", tempFilePath);
         fs.writeFileSync(tempFilePath, response.data);
+        console.log("fs.writeFileSync(tempFilePath, response.data);");
         try {
             // Load PDF using LangChain
             const loader = new pdf_1.PDFLoader(tempFilePath);
             const pdfDocs = await loader.load();
+            console.log("pdfDocs:", pdfDocs);
             // Split documents into chunks
             const textSplitter = new textsplitters_1.RecursiveCharacterTextSplitter({
                 chunkSize: 1000,
@@ -286,6 +291,7 @@ exports.streamPDFAnalysis = (0, express_async_handler_1.default)(async (req, res
                 model: 'embedding-001',
                 apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
             }));
+            console.log("vectorStore:", vectorStore);
             // Initialize LangChain components for streaming
             const llm = new google_genai_1.ChatGoogleGenerativeAI({
                 model: 'gemini-2.0-flash-exp',
@@ -293,9 +299,11 @@ exports.streamPDFAnalysis = (0, express_async_handler_1.default)(async (req, res
                 temperature: 0.3,
                 streaming: true,
             });
+            console.log("llm:", llm);
             const embeddings = new google_genai_2.GoogleGenerativeAIEmbeddings({
                 apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
             });
+            console.log("embeddings:", embeddings);
             // Create question answering prompt for streaming
             const questionAnsweringPrompt = prompts_1.ChatPromptTemplate.fromMessages([
                 [
@@ -312,23 +320,28 @@ Context: {context}`
                 ],
                 ['human', '{input}'],
             ]);
+            console.log("questionAnsweringPrompt:", questionAnsweringPrompt);
             // Create document chain
             const combineDocsChain = await (0, combine_documents_1.createStuffDocumentsChain)({
                 llm,
                 prompt: questionAnsweringPrompt,
             });
+            console.log("combineDocsChain:", combineDocsChain);
             // Create retrieval chain
             const chain = await (0, retrieval_1.createRetrievalChain)({
                 retriever: vectorStore.asRetriever({ k: 5 }),
                 combineDocsChain,
             });
+            console.log("chain:", chain);
             // Execute the analysis with streaming
             const query = question || 'Provide a comprehensive analysis of this document';
             const result = await chain.invoke({
                 input: query,
             });
+            console.log("result:", result);
             // Clean up temp file
             fs.unlinkSync(tempFilePath);
+            console.log("fs.unlinkSync(tempFilePath);");
             // Stream the response
             res.setHeader('Content-Type', 'text/plain; charset=utf-8');
             res.setHeader('Cache-Control', 'no-cache');
